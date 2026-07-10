@@ -26,4 +26,8 @@ describe('verifyPin', () => {
     const { hash, salt } = await hashPin('5678')
     expect(await verifyPin('9999', hash, salt)).toBe(false)
   })
+
+  it('returns false for corrupted stored salt', async () => {
+    expect(await verifyPin('1234', 'somehash', 'not-valid-base64!!!')).toBe(false)
+  })
 })

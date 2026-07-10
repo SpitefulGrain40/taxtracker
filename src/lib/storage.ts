@@ -14,22 +14,36 @@ export const storage = {
   getClaudeKey: () => localStorage.getItem(KEYS.CLAUDE_KEY),
   setClaudeKey: (key: string) => localStorage.setItem(KEYS.CLAUDE_KEY, key),
 
-  getActiveProfile: () => (localStorage.getItem(KEYS.ACTIVE_PROFILE) ?? 'mike') as 'mike' | 'gemma',
+  getActiveProfile: (): 'mike' | 'gemma' => {
+    const val = localStorage.getItem(KEYS.ACTIVE_PROFILE)
+    return val === 'mike' || val === 'gemma' ? val : 'mike'
+  },
   setActiveProfile: (id: 'mike' | 'gemma') => localStorage.setItem(KEYS.ACTIVE_PROFILE, id),
 
-  getPinHash: (profileId: string) => localStorage.getItem(`${KEYS.PIN_HASH}_${profileId}`),
-  getPinSalt: (profileId: string) => localStorage.getItem(`${KEYS.PIN_SALT}_${profileId}`),
   setPinHash: (profileId: string, hash: string, salt: string) => {
-    localStorage.setItem(`${KEYS.PIN_HASH}_${profileId}`, hash)
-    localStorage.setItem(`${KEYS.PIN_SALT}_${profileId}`, salt)
+    localStorage.setItem(`tt_pin_${profileId}`, JSON.stringify({ hash, salt }))
+  },
+  getPinHash: (profileId: string) => {
+    const raw = localStorage.getItem(`tt_pin_${profileId}`)
+    if (!raw) return null
+    try { return (JSON.parse(raw) as { hash: string; salt: string }).hash } catch { return null }
+  },
+  getPinSalt: (profileId: string) => {
+    const raw = localStorage.getItem(`tt_pin_${profileId}`)
+    if (!raw) return null
+    try { return (JSON.parse(raw) as { hash: string; salt: string }).salt } catch { return null }
   },
 
   getLastFxRate: (currency: string) => {
     const raw = localStorage.getItem(`${KEYS.LAST_FX_RATE}${currency}`)
-    return raw ? parseFloat(raw) : null
+    if (!raw) return null
+    const parsed = parseFloat(raw)
+    return Number.isFinite(parsed) ? parsed : null
   },
-  setLastFxRate: (currency: string, rate: number) =>
-    localStorage.setItem(`${KEYS.LAST_FX_RATE}${currency}`, String(rate)),
+  setLastFxRate: (currency: string, rate: number) => {
+    if (!Number.isFinite(rate)) return
+    localStorage.setItem(`${KEYS.LAST_FX_RATE}${currency}`, String(rate))
+  },
 
   isSetupComplete: () =>
     Boolean(localStorage.getItem(KEYS.GITHUB_PAT) && localStorage.getItem(KEYS.CLAUDE_KEY)),
