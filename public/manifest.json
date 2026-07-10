@@ -2,6 +2,7 @@
   "name": "TaxTracker",
   "short_name": "TaxTracker",
   "start_url": "/taxtracker/",
+  "scope": "/taxtracker/",
   "display": "standalone",
   "background_color": "#0C0C0E",
   "theme_color": "#0C0C0E",
