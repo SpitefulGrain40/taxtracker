@@ -7,7 +7,7 @@ export function getTaxYearKey(date: Date): TaxYearKey {
   const day = date.getDate()
   const startsNewYear = month > 4 || (month === 4 && day >= 6)
   const startYear = startsNewYear ? year : year - 1
-  return `${startYear}-${String(startYear + 1).slice(-2)}`
+  return `${startYear}-${String(startYear + 1).slice(-2)}` as TaxYearKey
 }
 
 export function getCurrentTaxYear(): TaxYearKey {

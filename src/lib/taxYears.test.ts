@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getCurrentTaxYear, getTaxYearKey, getTaxYearLabel, monthsIntoTaxYear } from './taxYears'
+import { getTaxYearKey, getTaxYearLabel, monthsIntoTaxYear } from './taxYears'
 
 describe('getTaxYearKey', () => {
   it('returns 2025-26 for a date in April 2025', () => {

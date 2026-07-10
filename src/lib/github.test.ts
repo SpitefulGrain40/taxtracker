@@ -25,8 +25,8 @@ describe('GitHubDataClient.readFile', () => {
     })
     const client = new GitHubDataClient('token', 'owner', 'repo')
     const result = await client.readFile('data/mike/profile.json')
-    expect(result.data).toEqual(data)
-    expect(result.sha).toBe('abc123')
+    expect(result!.data).toEqual(data)
+    expect(result!.sha).toBe('abc123')
   })
 
   it('returns null when file does not exist', async () => {
