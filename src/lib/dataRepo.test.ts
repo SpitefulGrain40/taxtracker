@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { readProfile, writeProfile, readTaxYear, writeTaxYear, profilePath, taxYearPath } from './dataRepo'
+import { readProfile, writeProfile, profilePath, taxYearPath } from './dataRepo'
 
 const mockClient = {
   readFile: vi.fn(),
@@ -21,7 +21,7 @@ describe('readProfile', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('returns profile data when file exists', async () => {
-    const profile = { id: 'mike', firstName: 'Mike', niNumber: 'JL041798C', taxCode: '207T', pinHash: 'h', pinSalt: 's', schemes: [], otherIncomeSources: [] }
+    const profile = { id: 'mike' as const, firstName: 'Mike', niNumber: 'JL041798C', taxCode: '207T', pinHash: 'h', pinSalt: 's', githubPat: '', schemes: [], otherIncomeSources: [] as [] }
     mockClient.readFile.mockResolvedValue({ data: profile, sha: 'abc' })
     const result = await readProfile(mockClient as never, 'mike')
     expect(result?.data.firstName).toBe('Mike')
@@ -38,7 +38,7 @@ describe('readProfile', () => {
 describe('writeProfile', () => {
   it('calls writeFile with correct path', async () => {
     mockClient.writeFile.mockResolvedValue(undefined)
-    const profile = { id: 'mike' as const, firstName: 'Mike', niNumber: '', taxCode: '', pinHash: '', pinSalt: '', schemes: [], otherIncomeSources: [] }
+    const profile = { id: 'mike' as const, firstName: 'Mike', niNumber: '', taxCode: '', pinHash: '', pinSalt: '', githubPat: '', schemes: [], otherIncomeSources: [] as [] }
     await writeProfile(mockClient as never, 'mike', profile, 'sha123')
     expect(mockClient.writeFile).toHaveBeenCalledWith('data/mike/profile.json', profile, 'sha123')
   })
