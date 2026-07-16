@@ -47,4 +47,9 @@ export const storage = {
 
   isSetupComplete: () =>
     Boolean(localStorage.getItem(KEYS.GITHUB_PAT) && localStorage.getItem(KEYS.CLAUDE_KEY)),
+
+  isOnboardingComplete: (profileId: string) =>
+    Boolean(localStorage.getItem(`tt_onboarding_${profileId}`)),
+  setOnboardingComplete: (profileId: string) =>
+    localStorage.setItem(`tt_onboarding_${profileId}`, '1'),
 }
