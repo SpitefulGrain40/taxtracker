@@ -13,6 +13,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.112.1",
     "@octokit/rest": "^22.0.1",
     "lucide-react": "^1.24.0",
     "react": "^19.2.7",
