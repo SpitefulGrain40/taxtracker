@@ -26,6 +26,12 @@ interface RawPayslipExtraction {
 
 export function parsePayslipResponse(jsonText: string): Omit<Payslip, 'id' | 'taxPeriod' | 'taxYear' | 'rawExtracted'> {
   const raw = JSON.parse(jsonText) as RawPayslipExtraction
+  const requiredNumbers: (keyof RawPayslipExtraction)[] = ['basicSalary', 'taxPaid', 'employeeNI', 'ytdGross', 'ytdTaxPaid', 'ytdEmployeeNI']
+  for (const field of requiredNumbers) {
+    if (typeof raw[field] !== 'number' || !Number.isFinite(raw[field] as number)) {
+      throw new Error(`Payslip extraction missing or invalid field: ${field}`)
+    }
+  }
   return {
     date: raw.payDate,
     basicSalary: raw.basicSalary,
@@ -80,18 +86,23 @@ export async function extractPayslip(
 
   const response = await client.messages.create({
     model: 'claude-opus-4-8',
-    max_tokens: 1024,
+    max_tokens: 4096,
     system: PAYSLIP_SYSTEM,
     messages: [
       {
         role: 'user',
         content: [
+          mediaType === 'application/pdf'
+            ? {
+                type: 'document' as const,
+                source: { type: 'base64' as const, media_type: mediaType, data: fileBase64 },
+              }
+            : {
+                type: 'image' as const,
+                source: { type: 'base64' as const, media_type: mediaType as 'image/jpeg' | 'image/png' | 'image/webp', data: fileBase64 },
+              },
           {
-            type: 'document',
-            source: { type: 'base64', media_type: mediaType, data: fileBase64 },
-          },
-          {
-            type: 'text',
+            type: 'text' as const,
             text: `Extract all payslip fields. Return JSON matching this schema exactly:\n${PAYSLIP_SCHEMA}\n\nFor salarySacrifice: include all negative deductions like pension contributions, critical illness, cycle to work, etc. For otherPayments: include any additional positive payments beyond basic salary and car allowance. Set rstVestIncome to null unless there is a clear one-off RSU/share vest income line.`,
           },
         ],
@@ -100,10 +111,17 @@ export async function extractPayslip(
   })
 
   const textBlock = response.content.find(b => b.type === 'text')
-  if (!textBlock || textBlock.type !== 'text') throw new Error('No text response from Claude')
+  if (!textBlock) throw new Error('No text response from Claude')
+
+  if (response.stop_reason !== 'end_turn') {
+    throw new Error(`Extraction incomplete: stop_reason was "${response.stop_reason}". Try a higher-quality scan.`)
+  }
 
   // Strip markdown code fences if present
-  const jsonText = textBlock.text.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim()
+  let jsonText = textBlock.text.trim()
+  if (jsonText.startsWith('```')) {
+    jsonText = jsonText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+  }
 
   const parsed = parsePayslipResponse(jsonText)
   return { ...parsed, rawExtracted: { payslip: jsonText } }

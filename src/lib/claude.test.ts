@@ -50,6 +50,11 @@ describe('parsePayslipResponse', () => {
     })
     const result = parsePayslipResponse(raw)
     expect(result.basicSalary).toBe(5000)
+    expect(result.carAllowance).toBe(0)
+    expect(result.esppContribution).toBe(0)
+    expect(result.employerMatch).toBe(0)
+    expect(result.salarySacrifice).toEqual([])
+    expect(result.otherPayments).toEqual([])
     expect(result.rstVestIncome).toBeUndefined()
   })
 
