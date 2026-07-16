@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev)",
+      "Bash(npm run build)",
+      "Bash(npm run test)",
+      "Bash(npm run test:watch)",
+      "Bash(npm run test:coverage)",
+      "Bash(npm ci)",
+      "Bash(npm install *)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx tsc *)",
+      "Bash(git status)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git add src/*)",
+      "Bash(git add .github/*)",
+      "Bash(git add CLAUDE.md)",
+      "Bash(git add README.md)",
+      "Bash(git add package.json)",
+      "Bash(git add package-lock.json)",
+      "Bash(git add vite.config.ts)",
+      "Bash(git add tailwind.config.ts)",
+      "Bash(git add tsconfig*)",
+      "Bash(git add index.html)",
+      "Bash(git add public/*)",
+      "Bash(git commit -m *)",
+      "Bash(git push)",
+      "Bash(git checkout dev)",
+      "Bash(git branch)",
+      "Bash(git stash)",
+      "Bash(git stash pop)"
+    ],
+    "deny": [
+      "Bash(git push --force *)",
+      "Bash(git push origin main *)",
+      "Bash(git reset --hard *)",
+      "Bash(git checkout main)",
+      "Bash(rm -rf *)",
+      "Bash(* > /dev/null && git push *)"
+    ]
+  }
+}

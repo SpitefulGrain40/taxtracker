@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code — local session data, worktrees, brainstorm files
+.claude/worktrees/
+.claude/scheduled_tasks.json
+.superpowers/
+
+# Claude Code settings are committed, but not local session state
+# .claude/settings.json IS committed (project permissions)
