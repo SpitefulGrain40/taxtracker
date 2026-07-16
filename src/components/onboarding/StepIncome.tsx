@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Check } from 'lucide-react'
 import type { Profile } from '../../types'
 
 type IncomeSource = Profile['otherIncomeSources'][number]
@@ -42,9 +43,7 @@ export function StepIncome({ onNext }: Props) {
             <div className="flex items-center gap-3">
               <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-all ${selected.has(o.value) ? 'bg-accent border-accent' : 'border-white/20'}`}>
                 {selected.has(o.value) && (
-                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                    <path d="M1 4L3.5 6.5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-bg" />
-                  </svg>
+                  <Check size={10} strokeWidth={2} className="text-bg" />
                 )}
               </div>
               <div>
