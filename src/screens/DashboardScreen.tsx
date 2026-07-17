@@ -6,7 +6,7 @@ import { useTaxYear } from '../hooks/useTaxYear'
 import { useProfile } from '../hooks/useProfile'
 import { storage } from '../lib/storage'
 import { summariseTaxYear } from '../lib/incomeSummary'
-import { dividendTax, savingsTax, marginalBand, parseTaxCode, effectivePersonalAllowance } from '../lib/taxCalc'
+import { dividendTaxStacked, savingsTaxStacked, marginalBand, parseTaxCode, effectivePersonalAllowance } from '../lib/taxCalc'
 import { CURRENT_RATES as R } from '../lib/taxRates'
 import { getCurrentTaxYear, getTaxYearLabel, monthsIntoTaxYear } from '../lib/taxYears'
 
@@ -20,12 +20,14 @@ export function DashboardScreen() {
   }
 
   const s = summariseTaxYear(taxYear)
-  const band = marginalBand(s.employmentIncome, R)
+  const band = marginalBand(s.employmentIncome + s.dividendIncome + s.savingsIncome + s.benefitsInKind, R)
   const codeAllowance = s.taxCode ? parseTaxCode(s.taxCode).allowance : null
-  void (codeAllowance ?? effectivePersonalAllowance(s.employmentIncome, R)) // allowance available for future use
+  const allowance = codeAllowance ?? effectivePersonalAllowance(s.employmentIncome, R)
 
-  const divTax = dividendTax(s.dividendIncome, band, R)
-  const savTax = savingsTax(s.savingsIncome, band, R)
+  // Extra tax owed outside PAYE, using band-aware stacking:
+  // savings stack on employment income, dividends stack above savings.
+  const savTax = savingsTaxStacked(s.savingsIncome, s.employmentIncome, allowance, R)
+  const divTax = dividendTaxStacked(s.dividendIncome, s.employmentIncome + s.savingsIncome, allowance, R)
   const extraOwed = divTax + savTax
 
   const key = getCurrentTaxYear()
