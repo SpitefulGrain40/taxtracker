@@ -89,14 +89,14 @@ data/gemma/...             # same structure, completely separate
 | `espp-discounted` | On discount value at purchase | Market value at purchase |
 | `rsu` | At vest (full market value via PAYE) | Market value at vest date |
 
-**Mike's scheme:** SAP ESPP employer-match, **XETRA-listed, priced in GBP** (confirmed from real portfolio export — NOT USD/NYSE as originally assumed). RSU vests start 2026-27 tax year.
+**Mike's scheme:** SAP ESPP employer-match, **XETRA-listed, denominated in EUR** (broker portal is EquatePlus; holding and purchase are in EUR — Yahoo symbol `SAP.DE` returns the correct EUR price). GBP is a **reference conversion only**, shown at today's live EUR→GBP rate. RSU vests start 2026-27 tax year. NOTE: UK CGT legally requires GBP conversion at the *acquisition* and *disposal* dates (historical rates), not today's — the "value today" GBP figure is for display, not for the CGT filing figure.
 **Gemma's scheme:** ESPP discounted-purchase. Leaving after next vest. Future employer scheme to be added (may be USD — keep FX machinery).
 
 Lots are employer-agnostic — tagged by employer + scheme type. Old lots persist permanently when changing jobs.
 
 ### Real-data findings (2026-07-17 — validated against Mike's actual SAP documents)
 
-- **SAP shares are GBP/XETRA, not USD/NYSE.** Market price quoted in £ (e.g. £137.64). No FX conversion needed for SAP; keep FX support for future USD employers.
+- **SAP shares are EUR/XETRA (not GBP, not USD/NYSE).** The broker portal (EquatePlus) reports the holding and purchase in EUR; GBP is a reference conversion only. Yahoo `SAP.DE` returns the correct EUR price. The app shows EUR value today (native) + GBP value today (converted at today's live EUR→GBP rate, for reference). The `acquisitionPriceGBP`/`costBasisGBP` fields on older imported lots may have been populated assuming the raw EUR number was GBP — re-import or re-derive with FX before relying on GBP figures.
 - **Portfolio export dates are Excel serial numbers** (epoch 1899-12-30; e.g. 45904 = 2025-09-04). The Plan 5 XLSX/CSV importer MUST convert these to ISO dates: `new Date(Date.UTC(1899,11,30) + serial*86400000).toISOString().slice(0,10)`.
 - **`PortfolioDetails_*.xlsx` structure:** each ESPP monthly purchase = two rows (`Purchase` + `Company match`) sharing allocation date + cost basis. RSU awards ("Elevate SAP - RSU share-settled") = one row per vesting tranche. Columns: Allocation date, Plan, Instrument type, Instrument, Participation description, Contribution type, Strike price / Cost basis, Market price, Available from, Expiry date, Allocated/Outstanding/Available quantity, Estimated current outstanding/available value.
 - **`CompletedTransactions_*.xlsx`** is a separate file for CGT disposals + dividends. Columns: Order reference, Date, Order type (Dividend/Sale), Quantity, Status, Execution price, Instrument, Product type, Strike price/cost basis, Taxes withheld, Fees, Net proceeds, Net units, FX currency, FX rate, Net proceeds after FX.
