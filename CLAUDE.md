@@ -89,10 +89,19 @@ data/gemma/...             # same structure, completely separate
 | `espp-discounted` | On discount value at purchase | Market value at purchase |
 | `rsu` | At vest (full market value via PAYE) | Market value at vest date |
 
-**Mike's scheme:** SAP ESPP employer-match, NYSE-listed (USD). RSU vests start 2026-27 tax year.
-**Gemma's scheme:** ESPP discounted-purchase. Leaving after next vest. Future employer scheme to be added.
+**Mike's scheme:** SAP ESPP employer-match, **XETRA-listed, priced in GBP** (confirmed from real portfolio export — NOT USD/NYSE as originally assumed). RSU vests start 2026-27 tax year.
+**Gemma's scheme:** ESPP discounted-purchase. Leaving after next vest. Future employer scheme to be added (may be USD — keep FX machinery).
 
 Lots are employer-agnostic — tagged by employer + scheme type. Old lots persist permanently when changing jobs.
+
+### Real-data findings (2026-07-17 — validated against Mike's actual SAP documents)
+
+- **SAP shares are GBP/XETRA, not USD/NYSE.** Market price quoted in £ (e.g. £137.64). No FX conversion needed for SAP; keep FX support for future USD employers.
+- **Portfolio export dates are Excel serial numbers** (epoch 1899-12-30; e.g. 45904 = 2025-09-04). The Plan 5 XLSX/CSV importer MUST convert these to ISO dates: `new Date(Date.UTC(1899,11,30) + serial*86400000).toISOString().slice(0,10)`.
+- **`PortfolioDetails_*.xlsx` structure:** each ESPP monthly purchase = two rows (`Purchase` + `Company match`) sharing allocation date + cost basis. RSU awards ("Elevate SAP - RSU share-settled") = one row per vesting tranche. Columns: Allocation date, Plan, Instrument type, Instrument, Participation description, Contribution type, Strike price / Cost basis, Market price, Available from, Expiry date, Allocated/Outstanding/Available quantity, Estimated current outstanding/available value.
+- **`CompletedTransactions_*.xlsx`** is a separate file for CGT disposals + dividends. Columns: Order reference, Date, Order type (Dividend/Sale), Quantity, Status, Execution price, Instrument, Product type, Strike price/cost basis, Taxes withheld, Fees, Net proceeds, Net units, FX currency, FX rate, Net proceeds after FX.
+- **Payslip extraction is accurate** against the real SAP format (period, K-code tax codes, YTD figures, EE OWN SAP / ER OWN SAPMatc lines, salary sacrifice).
+- **Tax code can be a K-code** (e.g. K289) — negative-allowance codes. Tax calc must handle K-codes (they add to taxable income rather than subtracting an allowance).
 
 ## Life events
 
@@ -107,14 +116,19 @@ Salary changes, pension contribution changes, RSU vest events, employment change
 - Dividend allowance: £500 | basic 8.75% | higher 33.75%
 - Savings PSA: £1,000 (basic) / £500 (higher rate)
 
-## Plan 2 (next)
+## Build progress
 
-Onboarding wizard + document upload + Claude API extraction:
-- Payslip-first onboarding (auto-populates profile from first payslip upload)
-- Share scheme configuration per employer
-- Claude API extraction: payslip → structured fields → user confirms
-- P11D, P60, stock CSV import
-- Life event detection (salary change, RSU vest) from payslip
+- **Plan 1 (Foundation)** ✅ — scaffold, auth, GitHub data layer, nav, PIN/setup, CI/CD
+- **Plan 2 (Onboarding + Extraction)** ✅ — setup wizard, payslip upload, Claude extraction, scheme config, `useProfile`/`useTaxYear` hooks. On `dev`/staging.
+- **Plan 3 (Dashboard + Income)** — in progress
+- **Plan 4 (Documents)** — pending: full doc management, P11D + P60 extraction
+- **Plan 5 (Share Schemes + CGT)** — pending: lot register, portfolio XLSX import, CGT "what if I sell" calculator
+- **Plan 6 (Tax Return)** — pending: SA100/SA102/CGT summary, encrypted export
+
+Key modules from Plan 2 available for reuse:
+- `src/lib/claude.ts` — `extractPayslip()`, `parsePayslipResponse()`
+- `src/lib/dataRepo.ts` — typed read/write for profile, taxYear, shareLots, lifeEvents (+ `emptyTaxYear`)
+- `src/hooks/useProfile.ts`, `src/hooks/useTaxYear.ts` — GitHub-backed data hooks with loading/error/save/refetch
 
 ## Deployment
 
