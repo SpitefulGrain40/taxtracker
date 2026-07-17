@@ -31,6 +31,7 @@ describe('fetchLivePrice', () => {
       currency: 'EUR',
       asOf: '2026-07-16',
       source: 'yahoo-finance',
+      fx: null,
     })
   })
 
@@ -70,5 +71,54 @@ describe('fetchLivePrice', () => {
     })
     await fetchLivePrice('https://proxy.example.dev///', 'SAP.DE')
     expect(fn).toHaveBeenCalledWith('https://proxy.example.dev/?symbol=SAP.DE')
+  })
+
+  it('appends fxFrom/fxTo query params when fx is passed', async () => {
+    const fn = mockFetch({
+      symbol: 'SAP.DE',
+      price: 245.6,
+      currency: 'EUR',
+      asOf: '2026-07-16',
+      source: 'yahoo-finance',
+    })
+    await fetchLivePrice('https://proxy.example.dev', 'SAP.DE', { from: 'EUR', to: 'GBP' })
+    expect(fn).toHaveBeenCalledWith('https://proxy.example.dev/?symbol=SAP.DE&fxFrom=EUR&fxTo=GBP')
+  })
+
+  it('parses a well-formed fx object into LivePrice.fx', async () => {
+    mockFetch({
+      symbol: 'SAP.DE',
+      price: 245.6,
+      currency: 'EUR',
+      asOf: '2026-07-16',
+      source: 'yahoo-finance',
+      fx: { from: 'EUR', to: 'GBP', rate: 0.84873, date: '2026-07-16' },
+    })
+    const result = await fetchLivePrice('https://proxy.example.dev', 'SAP.DE', { from: 'EUR', to: 'GBP' })
+    expect(result?.fx).toEqual({ from: 'EUR', to: 'GBP', rate: 0.84873, date: '2026-07-16' })
+  })
+
+  it('yields fx: null for a null or malformed fx (non-numeric rate) without throwing', async () => {
+    mockFetch({
+      symbol: 'SAP.DE',
+      price: 245.6,
+      currency: 'EUR',
+      asOf: '2026-07-16',
+      source: 'yahoo-finance',
+      fx: null,
+    })
+    const nullFx = await fetchLivePrice('https://proxy.example.dev', 'SAP.DE', { from: 'EUR', to: 'GBP' })
+    expect(nullFx?.fx).toBeNull()
+
+    mockFetch({
+      symbol: 'SAP.DE',
+      price: 245.6,
+      currency: 'EUR',
+      asOf: '2026-07-16',
+      source: 'yahoo-finance',
+      fx: { from: 'EUR', to: 'GBP', rate: 'not-a-number', date: '2026-07-16' },
+    })
+    const badFx = await fetchLivePrice('https://proxy.example.dev', 'SAP.DE', { from: 'EUR', to: 'GBP' })
+    expect(badFx?.fx).toBeNull()
   })
 })

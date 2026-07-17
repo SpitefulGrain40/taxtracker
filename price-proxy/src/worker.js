@@ -27,6 +27,10 @@ export default {
     if (!/^[A-Z0-9.\-]{1,15}$/.test(symbol)) {
       return json({ error: 'invalid symbol' }, 400, origin)
     }
+    // Optional currency conversion (e.g. ?fxFrom=EUR&fxTo=GBP). GBP is a
+    // reference conversion only — the native price is always the priority.
+    const fxFrom = (url.searchParams.get('fxFrom') || '').toUpperCase()
+    const fxTo = (url.searchParams.get('fxTo') || '').toUpperCase()
     try {
       const yurl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`
       const r = await fetch(yurl, { headers: { 'User-Agent': 'Mozilla/5.0' } })
@@ -43,17 +47,38 @@ export default {
       }
       if (price == null) price = meta?.regularMarketPrice ?? null
       if (price == null) return json({ error: 'no price' }, 404, origin)
+      // Best-effort FX — never let a rate failure fail the whole request.
+      const fx = await fetchFx(fxFrom, fxTo)
       return json({
         symbol,
         price,
         currency: meta?.currency ?? null,
         asOf: asOf ? new Date(asOf * 1000).toISOString().slice(0, 10) : null,
         source: 'yahoo-finance',
+        fx,
       }, 200, origin)
     } catch (e) {
       return json({ error: String(e) }, 500, origin)
     }
   },
+}
+
+// Fetch a base→quote exchange rate from Frankfurter (ECB data, keyless).
+// Returns { from, to, rate, date } on success, or null on any failure or
+// missing/invalid params — FX is never allowed to fail the price lookup.
+async function fetchFx(from, to) {
+  if (!/^[A-Z]{3}$/.test(from) || !/^[A-Z]{3}$/.test(to)) return null
+  try {
+    const furl = `https://api.frankfurter.dev/v1/latest?base=${from}&symbols=${to}`
+    const r = await fetch(furl)
+    if (!r.ok) return null
+    const data = await r.json()
+    const rate = data?.rates?.[to]
+    if (typeof rate !== 'number' || !Number.isFinite(rate)) return null
+    return { from, to, rate, date: data?.date ?? null }
+  } catch {
+    return null
+  }
 }
 
 function json(obj, status, origin) {

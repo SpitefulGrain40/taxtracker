@@ -68,10 +68,28 @@ of `src/worker.js`, then run `wrangler deploy` again.
 ## A note on currency
 
 The Worker returns the price **exactly as Yahoo reports it**, along with the
-currency code. For `SAP.DE` (XETRA) that currency is **EUR**, which is *not*
-the GBP figure on your SAP statement. TaxTracker warns you when the currency
-isn't GBP and lets you type the correct GBP price manually — so the live price
-is a convenience, not a source of a wrong tax figure.
+currency code. For `SAP.DE` (XETRA) that currency is **EUR** — and that is the
+correct, native figure for shares held in the EquatePlus broker portal.
+
+You can optionally ask the Worker to also return a conversion rate so
+TaxTracker can show a **GBP reference figure at today's rate**. Add the
+`fxFrom` and `fxTo` query parameters:
+
+```
+?symbol=SAP.DE&fxFrom=EUR&fxTo=GBP
+```
+
+Both must be 3-letter currency codes (e.g. `EUR`, `GBP`, `USD`). When present,
+the Worker fetches the live rate from
+[Frankfurter](https://frankfurter.dev/) (European Central Bank data, no key
+needed) and adds it to the response as `fx: { from, to, rate, date }`. If the
+parameters are missing or the rate can't be fetched, `fx` is `null` and the
+price is still returned — FX never fails the whole request.
+
+The GBP figure is a **reference conversion only**. UK Capital Gains Tax is
+legally calculated using the exchange rate on the actual purchase and sale
+dates, not today's rate, so treat the live GBP value as a display convenience
+rather than a filing figure.
 
 ## Security
 

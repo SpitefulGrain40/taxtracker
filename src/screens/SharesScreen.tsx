@@ -20,6 +20,19 @@ import { fetchLivePrice, type LivePrice } from '../lib/priceProxy'
 import type { ShareLot } from '../types'
 
 const DEFAULT_SYMBOL = 'SAP.DE'
+const DEFAULT_NATIVE_CCY = 'EUR'
+const REFERENCE_CCY = 'GBP'
+
+// Native currency symbol for display — never hardcode a single currency, since
+// Mike's SAP holding is EUR and future schemes may be USD.
+function currencySymbol(code: string | null | undefined): string {
+  switch (code) {
+    case 'EUR': return '€'
+    case 'GBP': return '£'
+    case 'USD': return '$'
+    default: return code ? `${code} ` : ''
+  }
+}
 
 export function SharesScreen() {
   const profileId = storage.getActiveProfile()
@@ -56,9 +69,10 @@ export function SharesScreen() {
     const url = storage.getPriceProxyUrl()
     const sym = storage.getPriceSymbol(profileId) || DEFAULT_SYMBOL
     if (!url || !sym) { setPriceState('idle'); return }
+    const from = profile?.schemes[0]?.currency || DEFAULT_NATIVE_CCY
     let cancelled = false
     setPriceState('loading')
-    fetchLivePrice(url, sym)
+    fetchLivePrice(url, sym, { from, to: REFERENCE_CCY })
       .then(res => {
         if (cancelled) return
         if (res) { setLivePrice(res); setPriceState('ok') }
@@ -66,14 +80,15 @@ export function SharesScreen() {
       })
       .catch(() => { if (!cancelled) { setLivePrice(null); setPriceState('unavailable') } })
     return () => { cancelled = true }
-  }, [lots, profileId])
+  }, [lots, profileId, profile])
 
   const refreshPrice = () => {
     const url = storage.getPriceProxyUrl()
     const sym = storage.getPriceSymbol(profileId) || DEFAULT_SYMBOL
     if (!url || !sym) { setPriceState('idle'); return }
+    const from = profile?.schemes[0]?.currency || DEFAULT_NATIVE_CCY
     setPriceState('loading')
-    fetchLivePrice(url, sym)
+    fetchLivePrice(url, sym, { from, to: REFERENCE_CCY })
       .then(res => {
         if (res) { setLivePrice(res); setPriceState('ok') }
         else { setLivePrice(null); setPriceState('unavailable') }
@@ -95,23 +110,29 @@ export function SharesScreen() {
 
   const pool = section104Pool(lots)
   const scheme = profile?.schemes[0]
+  const nativeCcy = scheme?.currency || DEFAULT_NATIVE_CCY
+  const sym = currencySymbol(nativeCcy)
   const lastLotPrice = lots.length ? (lots[lots.length - 1].acquisitionPriceGBP) : 0
-  // Only use the live price in the £ headline if it's in GBP (or currency unknown).
-  // A EUR price (e.g. SAP.DE on XETRA) would overstate the GBP figure, so skip it.
-  const usableLive = livePrice && (livePrice.currency == null || livePrice.currency === 'GBP') ? livePrice.price : null
-  // Fallback chain: manual override → usable (GBP) live price → last-lot price
-  const effectivePrice = manualPrice ?? usableLive ?? lastLotPrice
-  const currentValue = pool.quantity * effectivePrice
-  const unrealised = currentValue - pool.totalCost
+  // Effective (native) price: manual override → live (previous close) → last-lot.
+  // The live price is in the scheme's native currency (EUR for Mike's SAP).
+  const effectivePrice = manualPrice ?? livePrice?.price ?? lastLotPrice
+  const nativeValue = pool.quantity * effectivePrice
+  const unrealised = nativeValue - pool.totalCost
+
+  // GBP reference conversion at today's live rate (display only — not the CGT
+  // filing figure, which uses the rate on the actual purchase/sale dates).
+  const fx = livePrice?.fx ?? null
+  const gbpValue = fx?.rate != null ? nativeValue * fx.rate : null
+  const gbpPricePerShare = fx?.rate != null ? effectivePrice * fx.rate : null
 
   const hasProxy = Boolean(storage.getPriceProxyUrl())
-  const currencyMismatch = priceState === 'ok' && livePrice?.currency != null && livePrice.currency !== 'GBP'
 
   // Which price source is actually driving the effective price?
   const priceSource: 'manual' | 'live' | 'fallback' =
-    manualPrice != null ? 'manual' : (usableLive != null ? 'live' : 'fallback')
+    manualPrice != null ? 'manual' : (livePrice != null ? 'live' : 'fallback')
 
   const band = taxYear ? marginalBand(summariseTaxYear(taxYear).employmentIncome, R) : 'higher'
+  const money = (n: number, symbol: string) => `${symbol}${Math.round(n).toLocaleString('en-GB')}`
   const gbp = (n: number) => `£${Math.round(n).toLocaleString('en-GB')}`
 
   const handleImport = async (file: File) => {
@@ -142,8 +163,23 @@ export function SharesScreen() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
         <StatCard label="Shares held" value={pool.quantity.toFixed(2)} note={`${lots.filter(l => !l.disposalDate).length} lots`} />
-        <StatCard label="Est. current value" value={gbp(currentValue)} variant="green" note={`at £${effectivePrice.toFixed(2)}/share`} />
-        <StatCard label="Unrealised gain" value={gbp(unrealised)} variant={unrealised >= 0 ? 'yellow' : 'red'} note="if sold at current price" />
+        <StatCard
+          label="Est. current value"
+          value={money(nativeValue, sym)}
+          variant="green"
+          note={
+            <>
+              at {sym}{effectivePrice.toFixed(2)}/share
+              {priceSource === 'live' && livePrice?.asOf ? ` · previous close ${livePrice.asOf}` : ''}
+              <span className="block mt-1 text-text-2">
+                {gbpValue != null && fx ? (
+                  <>≈ {gbp(gbpValue)} for reference, at today's rate (<JargonTip term={`${fx.rate.toFixed(4)} ${fx.from}→${fx.to}`} explanation="Today's live exchange rate. Your CGT filing figure must instead use the rate on the actual purchase and sale dates — this is a display convenience only." />{fx.date ? `, ${fx.date}` : ''})</>
+                ) : hasProxy ? 'GBP reference unavailable — try refresh' : 'Add a price source to see a GBP reference'}
+              </span>
+            </>
+          }
+        />
+        <StatCard label="Unrealised gain" value={money(unrealised, sym)} variant={unrealised >= 0 ? 'yellow' : 'red'} note="if sold at current price" />
       </div>
 
       {/* Price source control */}
@@ -154,7 +190,7 @@ export function SharesScreen() {
               <TrendingUp size={16} />
             </span>
             <div>
-              <div className="font-mono text-sm text-text-1">£{effectivePrice.toFixed(2)}<span className="text-text-2 text-xs"> /share</span></div>
+              <div className="font-mono text-sm text-text-1">{sym}{effectivePrice.toFixed(2)}<span className="text-text-2 text-xs"> /share</span></div>
               <div className="text-[12px] text-text-2">
                 {priceSource === 'live' && `Previous close${livePrice?.asOf ? ` · ${livePrice.asOf}` : ''}`}
                 {priceSource === 'manual' && 'Manual price'}
@@ -195,18 +231,10 @@ export function SharesScreen() {
           </p>
         )}
 
-        {currencyMismatch && (
-          <div className="mt-3">
-            <AlertStrip variant="yellow">
-              This price is in {livePrice?.currency}. SAP shares on your statement are in GBP — enter the GBP price manually for an accurate figure.
-            </AlertStrip>
-          </div>
-        )}
-
         {/* Manual price override */}
         <div className="flex items-center gap-2 mt-4">
-          <span className="text-xs text-text-2 flex-1">Set price manually (GBP per share)</span>
-          <span className="font-mono text-xs text-text-2">£</span>
+          <span className="text-xs text-text-2 flex-1">Set price manually ({nativeCcy} per share)</span>
+          <span className="font-mono text-xs text-text-2">{sym}</span>
           <input
             type="number"
             step={0.01}
@@ -283,7 +311,15 @@ export function SharesScreen() {
           </div>
         </div>
 
-        <SellCalculator lots={lots} currentPrice={effectivePrice} band={band} />
+        <div>
+          <SellCalculator lots={lots} currentPrice={gbpPricePerShare ?? effectivePrice} band={band} />
+          <p className="text-[11px] text-text-2 mt-2 px-1">
+            {gbpPricePerShare != null
+              ? `CGT estimate uses today's ${REFERENCE_CCY} price (converted at today's ${fx?.from}→${fx?.to} rate). `
+              : `CGT estimate uses the ${nativeCcy} price as-is — no live GBP rate available, so treat it as a rough guide. `}
+            Your real filing figure needs the FX rate on the actual purchase and sale dates, not today's.
+          </p>
+        </div>
       </div>
 
       {!scheme && (
