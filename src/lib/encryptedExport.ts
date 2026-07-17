@@ -10,11 +10,11 @@ const ITERATIONS = 100_000
 function b64(bytes: Uint8Array): string {
   return btoa(String.fromCharCode(...bytes))
 }
-function unb64(s: string): Uint8Array {
+function unb64(s: string): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(atob(s), c => c.charCodeAt(0))
 }
 
-async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
+async function deriveKey(password: string, salt: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
   const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey'])
   return crypto.subtle.deriveKey(
     { name: 'PBKDF2', salt, iterations: ITERATIONS, hash: 'SHA-256' },
