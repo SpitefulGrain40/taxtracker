@@ -12,7 +12,6 @@ function corsHeaders(origin) {
     'Access-Control-Allow-Origin': allow,
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Cache-Control': 'public, max-age=3600',
   }
 }
 
@@ -58,8 +57,11 @@ export default {
 }
 
 function json(obj, status, origin) {
+  // Cache successful lookups for an hour; never cache errors so a transient
+  // upstream failure doesn't stick around after recovery.
+  const cache = status === 200 ? 'public, max-age=3600' : 'no-store'
   return new Response(JSON.stringify(obj), {
     status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': cache, ...corsHeaders(origin) },
   })
 }

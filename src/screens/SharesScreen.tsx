@@ -96,8 +96,11 @@ export function SharesScreen() {
   const pool = section104Pool(lots)
   const scheme = profile?.schemes[0]
   const lastLotPrice = lots.length ? (lots[lots.length - 1].acquisitionPriceGBP) : 0
-  // Fallback chain: manual override → live proxy price → last-lot price
-  const effectivePrice = manualPrice ?? livePrice?.price ?? lastLotPrice
+  // Only use the live price in the £ headline if it's in GBP (or currency unknown).
+  // A EUR price (e.g. SAP.DE on XETRA) would overstate the GBP figure, so skip it.
+  const usableLive = livePrice && (livePrice.currency == null || livePrice.currency === 'GBP') ? livePrice.price : null
+  // Fallback chain: manual override → usable (GBP) live price → last-lot price
+  const effectivePrice = manualPrice ?? usableLive ?? lastLotPrice
   const currentValue = pool.quantity * effectivePrice
   const unrealised = currentValue - pool.totalCost
 
@@ -106,7 +109,7 @@ export function SharesScreen() {
 
   // Which price source is actually driving the effective price?
   const priceSource: 'manual' | 'live' | 'fallback' =
-    manualPrice != null ? 'manual' : (livePrice != null ? 'live' : 'fallback')
+    manualPrice != null ? 'manual' : (usableLive != null ? 'live' : 'fallback')
 
   const band = taxYear ? marginalBand(summariseTaxYear(taxYear).employmentIncome, R) : 'higher'
   const gbp = (n: number) => `£${Math.round(n).toLocaleString('en-GB')}`
@@ -212,7 +215,7 @@ export function SharesScreen() {
             placeholder={effectivePrice.toFixed(2)}
             onChange={e => {
               const v = e.target.value
-              setManualPrice(v === '' ? null : (parseFloat(v) || 0))
+              setManualPrice(v === '' ? null : Math.max(0, parseFloat(v) || 0))
             }}
             className="w-28 bg-bg border border-white/10 rounded px-2 py-1 text-sm font-mono text-right focus:outline-none focus:border-accent/50"
           />
