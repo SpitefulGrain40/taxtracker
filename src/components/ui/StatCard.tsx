@@ -1,4 +1,4 @@
-type Variant = 'default' | 'green' | 'yellow' | 'accent' | 'blue'
+type Variant = 'default' | 'green' | 'yellow' | 'accent' | 'blue' | 'red'
 
 const valueColours: Record<Variant, string> = {
   default: 'text-text-1',
@@ -6,6 +6,7 @@ const valueColours: Record<Variant, string> = {
   yellow: 'text-yellow',
   accent: 'text-accent',
   blue: 'text-blue',
+  red: 'text-red',
 }
 
 interface Props {
