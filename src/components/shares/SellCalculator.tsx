@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { JargonTip } from '../ui/JargonTip'
 import { section104Pool, disposalGain, cgtOnDisposal } from '../../lib/cgt'
 import { CURRENT_RATES as R } from '../../lib/taxRates'
@@ -15,6 +15,10 @@ export function SellCalculator({ lots, currentPrice, band }: Props) {
   const pool = section104Pool(lots)
   const [qty, setQty] = useState(0)
   const [price, setPrice] = useState(currentPrice)
+
+  // Re-sync when the parent's price changes — e.g. when async FX resolves and
+  // the price flips from a native fallback to a GBP-converted figure.
+  useEffect(() => { setPrice(currentPrice) }, [currentPrice])
 
   const g = disposalGain(pool, qty, price)
   const cgt = cgtOnDisposal(Math.max(0, g.gain), band, 0, R)

@@ -132,7 +132,7 @@ export function SharesScreen() {
     manualPrice != null ? 'manual' : (livePrice != null ? 'live' : 'fallback')
 
   const band = taxYear ? marginalBand(summariseTaxYear(taxYear).employmentIncome, R) : 'higher'
-  const money = (n: number, symbol: string) => `${symbol}${Math.round(n).toLocaleString('en-GB')}`
+  const money = (n: number, sym: string) => `${sym}${Math.round(n).toLocaleString('en-GB')}`
   const gbp = (n: number) => `£${Math.round(n).toLocaleString('en-GB')}`
 
   const handleImport = async (file: File) => {
@@ -312,13 +312,22 @@ export function SharesScreen() {
         </div>
 
         <div>
-          <SellCalculator lots={lots} currentPrice={gbpPricePerShare ?? effectivePrice} band={band} />
-          <p className="text-[11px] text-text-2 mt-2 px-1">
-            {gbpPricePerShare != null
-              ? `CGT estimate uses today's ${REFERENCE_CCY} price (converted at today's ${fx?.from}→${fx?.to} rate). `
-              : `CGT estimate uses the ${nativeCcy} price as-is — no live GBP rate available, so treat it as a rough guide. `}
-            Your real filing figure needs the FX rate on the actual purchase and sale dates, not today's.
-          </p>
+          {gbpPricePerShare != null ? (
+            <>
+              <SellCalculator lots={lots} currentPrice={gbpPricePerShare} band={band} />
+              <p className="text-[11px] text-text-2 mt-2 px-1">
+                CGT estimate uses today's {REFERENCE_CCY} price (converted at today's {fx?.from}→{fx?.to} rate).
+                Your real filing figure needs the FX rate on the actual purchase and sale dates, not today's.
+              </p>
+            </>
+          ) : (
+            <div className="bg-surface border border-white/[0.06] rounded-[10px] p-5">
+              <h3 className="font-serif text-base mb-1">If I sell shares today…</h3>
+              <p className="text-text-2 text-xs">
+                Connect a price source with a live exchange rate to estimate <JargonTip term="capital gains tax" explanation="Tax on the profit when you sell shares. The first £3,000 of gains each year is tax-free; the rest is taxed at 18% (basic rate) or 24% (higher rate)." /> in £ — CGT is always calculated in GBP for HMRC.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
