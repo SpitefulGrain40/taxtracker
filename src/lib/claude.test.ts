@@ -62,3 +62,49 @@ describe('parsePayslipResponse', () => {
     expect(() => parsePayslipResponse('not json')).toThrow()
   })
 })
+
+import { parseP11DResponse, parseP60Response } from './claude'
+
+describe('parseP11DResponse', () => {
+  it('parses benefit line items', () => {
+    const raw = JSON.stringify({
+      taxYear: '2024-25',
+      benefits: [
+        { type: 'medical', description: 'Private medical insurance', taxableValue: 1450.00 },
+        { type: 'car', description: 'Company car', taxableValue: 3200.00 },
+      ],
+    })
+    const r = parseP11DResponse(raw)
+    expect(r.taxYear).toBe('2024-25')
+    expect(r.benefits).toHaveLength(2)
+    expect(r.benefits[0].taxableValue).toBe(1450.00)
+    expect(r.benefits[1].type).toBe('car')
+  })
+  it('handles empty benefits array', () => {
+    const r = parseP11DResponse(JSON.stringify({ taxYear: '2024-25', benefits: [] }))
+    expect(r.benefits).toEqual([])
+  })
+  it('throws on invalid JSON', () => {
+    expect(() => parseP11DResponse('nope')).toThrow()
+  })
+})
+
+describe('parseP60Response', () => {
+  it('parses year-end totals', () => {
+    const raw = JSON.stringify({
+      taxYear: '2024-25',
+      totalPay: 98000.00,
+      totalTaxDeducted: 27500.00,
+      totalEmployeeNI: 4100.00,
+      employerName: 'SAP UK Limited',
+      taxCode: 'K289',
+    })
+    const r = parseP60Response(raw)
+    expect(r.totalPay).toBe(98000.00)
+    expect(r.totalTaxDeducted).toBe(27500.00)
+    expect(r.taxCode).toBe('K289')
+  })
+  it('throws when required numeric field missing', () => {
+    expect(() => parseP60Response(JSON.stringify({ taxYear: '2024-25', employerName: 'X' }))).toThrow()
+  })
+})
