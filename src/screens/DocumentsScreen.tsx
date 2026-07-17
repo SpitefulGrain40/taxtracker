@@ -23,6 +23,15 @@ async function fileToBase64(file: File): Promise<{ base64: string; mediaType: 'a
   return { base64, mediaType }
 }
 
+/** Immutably append a payslip to the matching employer, or create a new employment. */
+function withPayslip(ty: TaxYear, payslip: Payslip): TaxYear {
+  const emp = ty.employment.find(e => e.employerName === payslip.employerName)
+  const employment = emp
+    ? ty.employment.map(e => (e === emp ? { ...e, payslips: [...e.payslips, payslip] } : e))
+    : [...ty.employment, { id: crypto.randomUUID(), employerName: payslip.employerName, payslips: [payslip] }]
+  return { ...ty, employment }
+}
+
 export function DocumentsScreen() {
   const profileId = storage.getActiveProfile()
   const { taxYear, saveTaxYear, loading } = useTaxYear(profileId)
@@ -60,10 +69,7 @@ export function DocumentsScreen() {
             taxPeriod: getTaxPeriod(payDate),
             taxYear: getTaxYearKey(payDate),
           }
-          const emp = ty.employment.find(e => e.employerName === r.employerName)
-          if (emp) emp.payslips.push(payslip)
-          else ty.employment.push({ id: crypto.randomUUID(), employerName: r.employerName, payslips: [payslip] })
-          return { ...ty }
+          return withPayslip(ty, payslip)
         })
       } else if (docType === 'p11d') {
         const r = await extractP11D(apiKey, base64, mediaType)
@@ -93,10 +99,7 @@ export function DocumentsScreen() {
             taxCode: r.taxCode, niNumber: '', employerName: r.employerName,
             rawExtracted: { p60: r.rawExtracted },
           }
-          const emp = ty.employment.find(e => e.employerName === r.employerName)
-          if (emp) emp.payslips.push(payslip)
-          else ty.employment.push({ id: crypto.randomUUID(), employerName: r.employerName, payslips: [payslip] })
-          return { ...ty }
+          return withPayslip(ty, payslip)
         })
       }
       setState('review')
