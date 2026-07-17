@@ -74,3 +74,94 @@ export function marginalBand(totalIncome: number, r: TaxRates): Band {
   if (totalIncome - pa > r.basicRateLimit) return 'higher'
   return 'basic'
 }
+
+/**
+ * Walks tax bands for a slice of income stacked on top of `startingIncome`
+ * (both expressed in TAXABLE terms). The first `allowanceWithinAmount` of the
+ * amount is 0-rated but still consumes band space; the remainder is taxed at
+ * the band rate for the position it occupies.
+ */
+function bandWalk(
+  startingIncome: number,
+  amount: number,
+  allowanceWithinAmount: number,
+  basicRate: number,
+  higherRate: number,
+  additionalRate: number,
+  basicTop: number,
+  higherTop: number,
+): number {
+  let pos = startingIncome
+  let remaining = amount
+
+  // 0-rated allowance (PSA / dividend allowance): consumes band space, no tax.
+  const allowanceUsed = Math.min(remaining, allowanceWithinAmount)
+  pos += allowanceUsed
+  remaining -= allowanceUsed
+
+  let tax = 0
+  while (remaining > 0) {
+    let bandTop: number
+    let rate: number
+    if (pos < basicTop) {
+      bandTop = basicTop
+      rate = basicRate
+    } else if (pos < higherTop) {
+      bandTop = higherTop
+      rate = higherRate
+    } else {
+      bandTop = Infinity
+      rate = additionalRate
+    }
+    const slice = Math.min(remaining, bandTop - pos)
+    tax += slice * rate
+    pos += slice
+    remaining -= slice
+  }
+  return tax
+}
+
+/**
+ * Dividend tax where dividends stack on top of `otherIncome` (employment + savings).
+ * The dividend allowance (£500) is applied first (uses up band space but is 0-rated).
+ * Then each slice of dividends is taxed at the dividend rate for the band it falls in.
+ * `allowance` is the personal allowance in force (already computed by caller).
+ */
+export function dividendTaxStacked(dividends: number, otherIncome: number, allowance: number, r: TaxRates): number {
+  if (dividends <= 0) return 0
+  const startingIncome = Math.max(0, otherIncome - allowance)
+  const higherTop = r.higherRateLimit - allowance
+  return bandWalk(
+    startingIncome,
+    dividends,
+    r.dividendAllowance,
+    r.dividendBasicRate,
+    r.dividendHigherRate,
+    r.dividendAdditionalRate,
+    r.basicRateLimit,
+    higherTop,
+  )
+}
+
+/**
+ * Savings interest tax where interest stacks on top of `otherIncome` (employment),
+ * BELOW dividends. Applies the PSA (band-dependent), then taxes each slice at the
+ * income-tax rate for the band it falls in.
+ */
+export function savingsTaxStacked(interest: number, otherIncome: number, allowance: number, r: TaxRates): number {
+  if (interest <= 0) return 0
+  const startingIncome = Math.max(0, otherIncome - allowance)
+  const higherTop = r.higherRateLimit - allowance
+  const overallBand = marginalBand(otherIncome + interest, r)
+  const psa = overallBand === 'basic' ? r.psaBasicRate : overallBand === 'higher' ? r.psaHigherRate : 0
+  return bandWalk(
+    startingIncome,
+    interest,
+    psa,
+    r.basicRate,
+    r.higherRate,
+    r.additionalRate,
+    r.basicRateLimit,
+    higherTop,
+  )
+}

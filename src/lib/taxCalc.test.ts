@@ -7,6 +7,8 @@ import {
   dividendTax,
   savingsTax,
   marginalBand,
+  dividendTaxStacked,
+  savingsTaxStacked,
 } from './taxCalc'
 import { RATES_2025_26 as R } from './taxRates'
 
@@ -104,5 +106,38 @@ describe('marginalBand', () => {
   })
   it('classifies additional-rate taxpayer', () => {
     expect(marginalBand(200000, R)).toBe('additional')
+  })
+})
+
+describe('dividendTaxStacked', () => {
+  it('taxes all dividends at basic rate when total stays in basic band', () => {
+    // otherIncome 30000, allowance 12570 → taxable non-savings 17430.
+    // dividends 2000, £500 allowance → £1500 taxable, all within basic band (well below 37700).
+    // 1500 * 8.75% = 131.25
+    expect(dividendTaxStacked(2000, 30000, 12570, R)).toBeCloseTo(131.25, 2)
+  })
+  it('splits dividends across basic and higher when they straddle the boundary', () => {
+    // otherIncome 50000, allowance 12570 → taxable non-savings 37430 (just below basic top 37700).
+    // dividends 5000: £500 allowance (0-rated) fills 37430→37930... wait allowance is 0-rated but uses band space.
+    // Band space left in basic after non-savings: 37700 - 37430 = 270.
+    // £500 dividend allowance is 0-rated and consumes 500 of band space (270 basic + 230 higher).
+    // Remaining 4500 dividends: all now in higher band → 4500 * 33.75% = 1518.75
+    expect(dividendTaxStacked(5000, 50000, 12570, R)).toBeCloseTo(1518.75, 2)
+  })
+  it('is zero when dividends within allowance', () => {
+    expect(dividendTaxStacked(400, 30000, 12570, R)).toBe(0)
+  })
+})
+
+describe('savingsTaxStacked', () => {
+  it('taxes savings at basic rate within basic band with PSA', () => {
+    // otherIncome 30000, allowance 12570 → taxable 17430. Overall band basic → PSA 1000.
+    // interest 2000: £1000 PSA (0-rated), £1000 taxable at 20% = 200
+    expect(savingsTaxStacked(2000, 30000, 12570, R)).toBeCloseTo(200, 2)
+  })
+  it('uses £500 PSA and higher rate for higher-rate taxpayer', () => {
+    // otherIncome 60000 → higher-rate taxpayer. PSA 500.
+    // interest 2000: £500 PSA, £1500 at 40% = 600
+    expect(savingsTaxStacked(2000, 60000, 12570, R)).toBeCloseTo(600, 2)
   })
 })
