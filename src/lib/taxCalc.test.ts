@@ -45,6 +45,18 @@ describe('incomeTax', () => {
   it('taxes into higher rate', () => {
     expect(incomeTax(60000, 12570, R)).toBeCloseTo(11432, 0)
   })
+  it('applies additional rate from the correct income level when allowance is zero', () => {
+    // £130k income, PA fully tapered to £0. Additional rate must start at
+    // £125,140 of income, NOT at 112,570 taxable. Correct HMRC:
+    // 37,700@20% + 87,440@40% + 4,860@45% = 7,540 + 34,976 + 2,187 = 44,703
+    expect(incomeTax(130000, 0, R)).toBeCloseTo(44703, 0)
+  })
+  it('does not push tapered-allowance earners into additional rate early', () => {
+    // £120k income, PA tapered to £2,570. Additional threshold in taxable
+    // terms = 125,140 - 2,570 = 122,570 (not reached). No 45% due.
+    // 37,700@20% + 79,730@40% = 7,540 + 31,892 = 39,432
+    expect(incomeTax(120000, 2570, R)).toBeCloseTo(39432, 0)
+  })
   it('handles K-code (negative allowance adds to taxable income)', () => {
     expect(incomeTax(60000, -2890, R)).toBeCloseTo(17616, 0)
   })

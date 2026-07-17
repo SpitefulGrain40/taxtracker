@@ -23,8 +23,11 @@ export function incomeTax(income: number, allowance: number, r: TaxRates): numbe
   const taxable = Math.max(0, income - allowance)
   if (taxable <= 0) return 0
 
-  const basicBand = r.basicRateLimit                            // 37700
-  const higherBandTop = r.higherRateLimit - r.personalAllowance // 125140 - 12570 = 112570
+  const basicBand = r.basicRateLimit                    // 37700
+  // Additional-rate threshold expressed in TAXABLE terms uses the ACTUAL
+  // allowance in force (tapered PA / K-code), not the constant PA. Using the
+  // constant would push high earners with reduced allowances into 45% too early.
+  const higherBandTop = r.higherRateLimit - allowance
 
   let tax = 0
   const basic = Math.min(taxable, basicBand)
