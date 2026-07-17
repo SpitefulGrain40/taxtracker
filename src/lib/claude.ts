@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import type { Payslip, LineItem, BenefitEntry, TaxYearKey } from '../types'
+import type { Payslip, LineItem, BenefitEntry } from '../types'
 
 // ─── Raw extraction shape returned by Claude ─────────────────────────────────
 
