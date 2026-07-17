@@ -5,6 +5,8 @@ const KEYS = {
   PIN_HASH: 'tt_pin_hash',      // per-profile: tt_pin_hash_mike
   PIN_SALT: 'tt_pin_salt',
   LAST_FX_RATE: 'tt_last_fx_',  // prefix + currency, e.g. tt_last_fx_USD
+  PRICE_PROXY_URL: 'tt_price_proxy_url',
+  PRICE_SYMBOL: 'tt_price_symbol_',  // prefix + profileId, e.g. tt_price_symbol_mike
 } as const
 
 export const storage = {
@@ -44,6 +46,11 @@ export const storage = {
     if (!Number.isFinite(rate)) return
     localStorage.setItem(`${KEYS.LAST_FX_RATE}${currency}`, String(rate))
   },
+
+  getPriceProxyUrl: () => localStorage.getItem(KEYS.PRICE_PROXY_URL),
+  setPriceProxyUrl: (url: string) => localStorage.setItem(KEYS.PRICE_PROXY_URL, url),
+  getPriceSymbol: (profileId: string) => localStorage.getItem(`${KEYS.PRICE_SYMBOL}${profileId}`),
+  setPriceSymbol: (profileId: string, symbol: string) => localStorage.setItem(`${KEYS.PRICE_SYMBOL}${profileId}`, symbol),
 
   isSetupComplete: () =>
     Boolean(localStorage.getItem(KEYS.GITHUB_PAT) && localStorage.getItem(KEYS.CLAUDE_KEY)),
