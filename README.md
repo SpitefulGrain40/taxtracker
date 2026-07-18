@@ -10,8 +10,8 @@ UK personal income tracker, tax forecaster, share scheme calculator, and Self As
 ## What this app does
 
 - Tracks income from all sources: PAYE payslips, P11D benefits, dividends, savings interest, capital gains, and share schemes
-- Forecasts estimated tax owed (including amounts outside PAYE)
-- Tracks SAP ESPP and RSU share lots with CGT calculations (USD→GBP, per-lot cost basis)
+- Forecasts estimated tax owed (including amounts outside PAYE), with band-aware dividend/savings stacking
+- Tracks SAP ESPP and RSU share lots with CGT calculations (Section 104 pooling, per-lot cost basis). SAP shares are **EUR-denominated** (EquatePlus broker); the app shows EUR value plus a live GBP reference conversion at today's rate
 - Generates a ready-to-submit Self Assessment summary (SA100/SA102/CGT) aligned to current HMRC format
 - Plain English throughout — jargon buster tooltips on every tax term
 - Two separate profiles (Mike + Gemma) sharing one private GitHub data repo
@@ -30,6 +30,7 @@ UK personal income tracker, tax forecaster, share scheme calculator, and Self As
 | Data storage | Private GitHub repo (`taxtracker-data`) via GitHub REST API |
 | Auth | PBKDF2 PIN hashing (Web Crypto API), stored in localStorage |
 | AI extraction | Claude API (`claude-opus-4-8`) — payslips, P11D, P60 |
+| Share prices | Cloudflare Worker proxy (`price-proxy/`) — previous-day close + live EUR→GBP rate |
 | PWA | Web app manifest + service worker — installable on Android/iOS |
 | Testing | Vitest + React Testing Library |
 | Deployment | GitHub Actions → GitHub Pages |
@@ -110,7 +111,7 @@ npm run dev
 The app will show a **Setup Screen** — fill in:
 
 1. **Data repo:** `SpitefulGrain40/taxtracker-data`
-2. **GitHub PAT:** Create at https://github.com/settings/tokens/new — scope: `repo` (full access)
+2. **GitHub PAT:** Create a **fine-grained** token at https://github.com/settings/personal-access-tokens/new — scope it to **only** the `taxtracker-data` repo, with **Contents: Read and write**. (Avoid classic full-`repo` tokens.)
 3. **Claude API key:** Get at https://console.anthropic.com/settings/keys — this is **separate** from Claude Pro; you need an API account (pay-as-you-go, ~£0.50/year usage)
 4. **PIN:** 4–6 digits
 
@@ -144,11 +145,12 @@ src/
 ├── screens/
 │   ├── PinScreen.tsx         # Full-screen PIN entry on app load
 │   ├── SetupScreen.tsx       # First-run 3-step setup wizard
-│   ├── DashboardScreen.tsx   # (Plan 3 — placeholder)
-│   ├── IncomeScreen.tsx      # (Plan 3 — placeholder)
-│   ├── DocumentsScreen.tsx   # (Plan 4 — placeholder)
-│   ├── SharesScreen.tsx      # (Plan 5 — placeholder)
-│   └── TaxReturnScreen.tsx   # (Plan 6 — placeholder)
+│   ├── OnboardingScreen.tsx  # Profile + scheme onboarding
+│   ├── DashboardScreen.tsx   # Live tax position + Self Assessment alert
+│   ├── IncomeScreen.tsx      # Income breakdown + forecaster
+│   ├── DocumentsScreen.tsx   # Payslip/P11D/P60 upload + Claude extraction
+│   ├── SharesScreen.tsx      # Lot register, live price, CGT calculator
+│   └── TaxReturnScreen.tsx   # SA100/SA102/CGT summary + encrypted export
 ├── App.tsx                   # Router + auth gate (setup → PIN → screens)
 ├── main.tsx                  # React entry point
 └── index.css                 # Tailwind v4 @import + @theme design tokens
@@ -184,12 +186,7 @@ npm run test:watch    # watch mode
 npm run test:coverage # coverage report
 ```
 
-19 tests passing across:
-- `src/lib/auth.test.ts` — PBKDF2 hashing + verification
-- `src/lib/github.test.ts` — GitHub API client (mocked)
-- `src/lib/taxYears.test.ts` — Tax year boundary logic
-- `src/components/ui/StatCard.test.tsx` — StatCard rendering
-- `src/components/ui/JargonTip.test.tsx` — Tooltip hover behaviour
+103 tests passing across the tax engine, CGT pooling, portfolio import, income summary, tax-return assembly, encrypted export, the price proxy client, auth, GitHub client, and UI components. `npm audit` reports 0 vulnerabilities.
 
 ---
 
@@ -205,27 +202,22 @@ GitHub Actions handles deployment automatically:
 
 ---
 
-## What's built (Plan 1 complete)
+## What's built (all six plans complete)
 
-- [x] React + Vite + Tailwind v4 scaffold with design tokens
-- [x] All TypeScript types for every data shape
-- [x] GitHub API data client (read/write JSON to private repo)
-- [x] PBKDF2 PIN hashing (Web Crypto API) with atomic localStorage storage
-- [x] UK tax year utilities (6 April boundary, tax periods)
-- [x] Core UI components (StatCard, JargonTip, AlertStrip, StatusDot)
-- [x] Desktop top nav + mobile bottom tab bar
-- [x] PIN entry screen + first-run setup wizard
-- [x] App router with setup gate → PIN gate → 5 placeholder screens
-- [x] GitHub Actions deployment (production + staging)
+- [x] **Plan 1 — Foundation:** React + Vite + Tailwind v4 scaffold, all TypeScript types, GitHub data client, PBKDF2 PIN auth, tax year utilities, core UI components, desktop + mobile nav, PIN/setup screens, GitHub Actions CI/CD
+- [x] **Plan 2 — Onboarding + Extraction:** first-run setup wizard, onboarding, share scheme config (ESPP match / discounted / RSU), payslip PDF/image upload → Claude extraction → confirm
+- [x] **Plan 3 — Dashboard + Income:** live tax position, band-aware dividend/savings stacking, "what if I earned more" forecaster
+- [x] **Plan 4 — Documents:** payslip / P11D / P60 upload + Claude extraction, review-and-confirm, immutable state updates
+- [x] **Plan 5 — Share Schemes + CGT:** permanent lot register, portfolio XLSX import (fflate-based, no vulnerable deps), Section 104 pooling, live EUR price + GBP reference, "if I sell today" CGT calculator
+- [x] **Plan 6 — Tax Return:** SA100/SA102/dividends/savings/CGT summary with plain-English box mapping, readiness score, copy-to-HMRC, AES-GCM encrypted export
 
-## What's next (Plan 2)
+The app is functionally complete and verified end-to-end against Mike's real SAP data. See `FULL_BUILD_TEST_REPORT.md` for the test breakdown.
 
-Onboarding wizard + document upload + Claude API extraction:
-- Profile setup wizard (seeded from payslip upload)
-- Share scheme configuration (ESPP match, ESPP discounted, RSU)
-- Payslip PDF upload → Claude extracts fields → user confirms
-- P11D and P60 extraction
-- Stock plan CSV import for share lot register
+## What's left before wider use
+
+- **Deploy the price proxy** (`price-proxy/` — one-time `wrangler deploy`, see its README) and paste the Worker URL into the Shares screen so live prices work
+- **Live document extraction** on the hosted app needs your GitHub PAT + Claude API key entered in the browser (see setup above)
+- Optional refinements documented in `FULL_BUILD_TEST_REPORT.md` (CGT historical FX rates, 30-day CGT matching, discounted-ESPP cost basis for Gemma)
 
 ---
 
