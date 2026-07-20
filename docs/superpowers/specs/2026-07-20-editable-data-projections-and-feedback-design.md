@@ -104,6 +104,14 @@ export interface FeedbackEntry {
 }
 ```
 
+`Profile` gains an optional stated base salary (a hard input for the projection,
+preferred over the annualised payslip run-rate when present):
+
+```ts
+// Profile
+baseAnnualSalary?: number   // GBP; user-stated current annual base salary
+```
+
 Data repo files (private `taxtracker-data`):
 
 - `data/{profile}/future-events.json` — `FutureIncomeEvent[]`
@@ -132,8 +140,15 @@ the extracted payslip and saves only a `Profile`. Change:
   `emptyTaxYear`, and the Dashboard/Income render an **"Add your first payslip"**
   empty state (CTA → Documents) instead of zeros.
 
+**Onboarding also optionally captures known salary inputs** (new light step, or
+an addition to the income step): `baseAnnualSalary` (→ `Profile`) and an
+**expected bonus** (amount + expected month → a `FutureIncomeEvent` of type
+`bonus`). Both optional and skippable; when provided they seed the projection
+immediately with hard numbers instead of relying on the annualised run-rate.
+
 Regression test: onboarding with a payslip results in a persisted `TaxYear`
-whose `summariseTaxYear` returns the payslip's YTD figures (not zero).
+whose `summariseTaxYear` returns the payslip's YTD figures (not zero); a stated
+base salary and expected bonus persist to `Profile` / `future-events.json`.
 
 ---
 
@@ -152,10 +167,13 @@ projectTaxYear(
 
 **Method:**
 
-1. **Run-rate** from the latest payslip: `m = latest.taxPeriod` (1–12),
-   `avgMonthlyGross = latest.ytdGross / m`. Remaining months `= 12 − m`.
-2. **Projected employment gross** = `ytdGross + avgMonthlyGross × (12 − m)`,
-   then apply future events falling within the tax year:
+1. **Base annual salary:** prefer the user-stated `Profile.baseAnnualSalary`
+   when present. Otherwise derive a **run-rate** from the latest payslip:
+   `m = latest.taxPeriod` (1–12), `avgMonthlyGross = latest.ytdGross / m`.
+   Remaining months `= 12 − m`.
+2. **Projected employment gross** = `ytdGross + (statedMonthly or avgMonthlyGross)
+   × (12 − m)` (stated base salary ÷ 12 gives `statedMonthly`), then apply future
+   events falling within the tax year:
    - `pay-rise`: recompute the remaining-months run-rate from the new annual
      salary, effective from `effectiveDate`.
    - `bonus` / `rsu-vest`: add `amount` as a one-off.
@@ -199,8 +217,9 @@ allowance, K-code.
 
 - New `MoreDrawer` component (slide-over) triggered by the 5th nav item.
 - New `/account` screen (`AccountScreen`): view and edit
-  - Profile: `firstName`, `niNumber`, `taxCode`, schemes (add/edit/remove
-    `ShareSchemeConfig`).
+  - Profile: `firstName`, `niNumber`, `taxCode`, `baseAnnualSalary`, schemes
+    (add/edit/remove `ShareSchemeConfig` — type, discount %, currency, exchange,
+    broker; see Feature 6).
   - Income corrections: edit the saved payslip's figures (basic salary, tax
     paid, NI, YTD gross, tax code…) — the "correct anything that isn't quite
     right" need. Saves via `useTaxYear.saveTaxYear`.
@@ -222,17 +241,25 @@ allowance, K-code.
 
 ---
 
-## Feature 6 — Gemma's ESPP (`espp-discounted`) (Issue #5)
+## Feature 6 — Flexible discounted-ESPP support (`espp-discounted`) (Issue #5)
 
-Build the **general** discounted-ESPP support now; enter Gemma's specifics later.
+**Principle: don't hardcode anyone's scheme.** Scheme shape varies company to
+company and both users may change jobs, so schemes are **user-configured data**,
+not code. `ShareSchemeConfig` is already general (`schemeType`, `discountRate`,
+`currency`, `exchange`, `broker`, `active`) — the work is (a) making it fully
+**editable in the Account screen** and (b) handling `espp-discounted` in the tax
+logic.
 
-- Income tax on the **discount value at purchase**; CGT cost basis = **market
-  value at purchase** (per the scheme rules table in CLAUDE.md).
-- Keep FX machinery (may be USD). `ShareSchemeConfig.discountRate` drives the
-  discount income calc; the portfolio importer computes cost basis from market
-  price, discount income from `marketPrice × discountRate × qty`.
-- Specifics **TBD from user:** employer, discount %, currency, ticker, holdings.
-  Data entry / import happens once supplied; no blocker for building the logic.
+- **Editable scheme config (Account screen):** add / edit / remove schemes —
+  pick `schemeType`, set `discountRate`, `currency`, `exchange`, `broker`. When
+  either user changes jobs they reshape their own schemes; no code change.
+- **Tax logic:** income tax on the **discount value at purchase**
+  (`marketPrice × discountRate × qty`); CGT cost basis = **market value at
+  purchase** (per the scheme rules table in CLAUDE.md). FX machinery kept — the
+  scheme `currency` (e.g. USD) converts to GBP via the existing FX path.
+- **Gemma's initial values** are just data she enters: ~15% discount, USD,
+  converted. Ticker / broker / holdings supplied and imported when ready — no
+  blocker for building the logic.
 
 ---
 
