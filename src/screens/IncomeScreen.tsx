@@ -5,6 +5,7 @@ import { useTaxYear } from '../hooks/useTaxYear'
 import { storage } from '../lib/storage'
 import { summariseTaxYear } from '../lib/incomeSummary'
 import { getCurrentTaxYear, getTaxYearLabel } from '../lib/taxYears'
+import { FirstPayslipPrompt } from '../components/ui/FirstPayslipPrompt'
 
 export function IncomeScreen() {
   const profileId = storage.getActiveProfile()
@@ -13,6 +14,9 @@ export function IncomeScreen() {
   if (loading || !taxYear) {
     return <div className="text-text-2 text-sm py-8">Loading your income…</div>
   }
+
+  const hasAnyPayslip = taxYear.employment.some(e => e.payslips.length > 0)
+  if (!hasAnyPayslip) return <FirstPayslipPrompt />
 
   const s = summariseTaxYear(taxYear)
   const key = getCurrentTaxYear()

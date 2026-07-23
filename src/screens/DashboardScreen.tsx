@@ -9,6 +9,7 @@ import { summariseTaxYear } from '../lib/incomeSummary'
 import { dividendTaxStacked, savingsTaxStacked, marginalBand, parseTaxCode, effectivePersonalAllowance } from '../lib/taxCalc'
 import { CURRENT_RATES as R } from '../lib/taxRates'
 import { getCurrentTaxYear, getTaxYearLabel, monthsIntoTaxYear } from '../lib/taxYears'
+import { FirstPayslipPrompt } from '../components/ui/FirstPayslipPrompt'
 
 export function DashboardScreen() {
   const profileId = storage.getActiveProfile()
@@ -18,6 +19,9 @@ export function DashboardScreen() {
   if (loading || !taxYear) {
     return <div className="text-text-2 text-sm py-8">Loading your tax position…</div>
   }
+
+  const hasAnyPayslip = taxYear.employment.some(e => e.payslips.length > 0)
+  if (!hasAnyPayslip) return <FirstPayslipPrompt />
 
   const s = summariseTaxYear(taxYear)
   const band = marginalBand(s.employmentIncome + s.dividendIncome + s.savingsIncome + s.benefitsInKind, R)
