@@ -88,4 +88,12 @@ describe('projectTaxYear', () => {
     const stated = projectTaxYear(baseInput({ baseAnnualSalary: 72000 }))
     expect(stated.assumptions.some(a => /stated base salary/i.test(a))).toBe(true)
   })
+
+  it('does not dump tax on the stated-vs-run-rate salary gap into the shortfall (PAYE withholds it)', () => {
+    const runRate = projectTaxYear(baseInput())
+    const statedHigher = projectTaxYear(baseInput({ baseAnnualSalary: 72000 }))
+    expect(statedHigher.projectedGross).toBeGreaterThan(runRate.projectedGross)
+    // the extra future salary is PAYE-withheld, so the year-end set-aside barely moves
+    expect(statedHigher.shortfall).toBeCloseTo(runRate.shortfall, 0)
+  })
 })

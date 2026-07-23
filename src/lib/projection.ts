@@ -90,7 +90,7 @@ export function projectTaxYear(input: ProjectionInput): TaxProjection {
   // the projected marginal rate. Dividend/savings tax is NOT withheld by PAYE,
   // so it falls through into the shortfall the user must set aside.
   const runRatePAYE = ((latest.ytdTaxPaid + latest.ytdEmployeeNI) / m) * 12
-  const plainFuture = monthlyForFuture * (12 - m)
+  const plainFuture = (ytdGross / m) * (12 - m)
   const additions = (projectedGross - ytdGross) - plainFuture // pay-rise deltas + one-offs
   const incomeMarginal = band === 'basic' ? rates.basicRate : band === 'higher' ? rates.higherRate : rates.additionalRate
   const niMarginal = niBase > rates.niUpperEarningsLimit ? rates.niUpperRate : rates.niMainRate
