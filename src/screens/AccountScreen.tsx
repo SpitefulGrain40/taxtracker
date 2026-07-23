@@ -1,13 +1,17 @@
 import { ProfileSection } from '../components/account/ProfileSection'
 import { PayslipSection } from '../components/account/PayslipSection'
+import { FutureEventsSection } from '../components/account/FutureEventsSection'
 import { useProfile } from '../hooks/useProfile'
 import { useTaxYear } from '../hooks/useTaxYear'
+import { useFutureEvents } from '../hooks/useFutureEvents'
 import { storage } from '../lib/storage'
+import { getCurrentTaxYear } from '../lib/taxYears'
 
 export function AccountScreen() {
   const profileId = storage.getActiveProfile()
   const { profile, loading, saveProfile } = useProfile(profileId)
   const { taxYear, loading: taxYearLoading, saveTaxYear } = useTaxYear(profileId)
+  const { events, loading: eventsLoading, saveEvents } = useFutureEvents(profileId)
 
   return (
     <div>
@@ -26,6 +30,9 @@ export function AccountScreen() {
           <ProfileSection profile={profile} onSave={saveProfile} />
           {!taxYearLoading && taxYear && (
             <PayslipSection taxYear={taxYear} onSave={saveTaxYear} />
+          )}
+          {!eventsLoading && (
+            <FutureEventsSection events={events} taxYearKey={getCurrentTaxYear()} onSave={saveEvents} />
           )}
         </div>
       )}
