@@ -1,10 +1,13 @@
 import { ProfileSection } from '../components/account/ProfileSection'
+import { PayslipSection } from '../components/account/PayslipSection'
 import { useProfile } from '../hooks/useProfile'
+import { useTaxYear } from '../hooks/useTaxYear'
 import { storage } from '../lib/storage'
 
 export function AccountScreen() {
   const profileId = storage.getActiveProfile()
   const { profile, loading, saveProfile } = useProfile(profileId)
+  const { taxYear, loading: taxYearLoading, saveTaxYear } = useTaxYear(profileId)
 
   return (
     <div>
@@ -19,7 +22,12 @@ export function AccountScreen() {
       )}
 
       {!loading && profile && (
-        <ProfileSection profile={profile} onSave={saveProfile} />
+        <div className="space-y-5">
+          <ProfileSection profile={profile} onSave={saveProfile} />
+          {!taxYearLoading && taxYear && (
+            <PayslipSection taxYear={taxYear} onSave={saveTaxYear} />
+          )}
+        </div>
       )}
     </div>
   )
