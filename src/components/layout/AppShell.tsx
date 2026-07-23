@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { DesktopNav } from './DesktopNav'
 import { MobileNav } from './MobileNav'
 import { MoreDrawer } from './MoreDrawer'
+import { FeedbackForm } from '../account/FeedbackForm'
 import { storage } from '../../lib/storage'
 
 interface Props {
@@ -15,7 +16,9 @@ export function AppShell({ children, onProfileSwitch, onLock }: Props) {
   const profileId = storage.getActiveProfile()
   const profileName = profileId === 'mike' ? 'Mike' : 'Gemma'
   const [moreOpen, setMoreOpen] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
   const navigate = useNavigate()
+  const { pathname } = useLocation()
 
   const handleNavigate = (to: string) => {
     navigate(to)
@@ -33,11 +36,12 @@ export function AppShell({ children, onProfileSwitch, onLock }: Props) {
         open={moreOpen}
         onClose={() => setMoreOpen(false)}
         onNavigate={handleNavigate}
-        onSubmitFeedback={() => {}} // wired in Task 8
+        onSubmitFeedback={() => { setMoreOpen(false); setFeedbackOpen(true) }}
         onSwitchProfile={onProfileSwitch}
         onLock={onLock}
         profileName={profileName}
       />
+      <FeedbackForm open={feedbackOpen} onClose={() => setFeedbackOpen(false)} screen={pathname} />
     </div>
   )
 }
