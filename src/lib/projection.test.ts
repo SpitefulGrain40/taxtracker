@@ -69,10 +69,11 @@ describe('projectTaxYear', () => {
     expect(projectTaxYear(baseInput({ events: [other] })).projectedGross).toBeCloseTo(60000, 2)
   })
 
-  it('reports a shortfall to set aside when there is untaxed dividend income', () => {
-    const p = projectTaxYear(baseInput({ taxYear: taxYear([payslip()], { dividends: [{ id: 'd', description: 'Acme', amount: 6000, date: '2025-08-01', taxYear: '2025-26' }] }) }))
-    // dividends are not withheld by PAYE → a positive set-aside shortfall
-    expect(p.shortfall).toBeGreaterThan(0)
+  it('adds untaxed dividend income to the shortfall to set aside', () => {
+    const withDiv = projectTaxYear(baseInput({ taxYear: taxYear([payslip()], { dividends: [{ id: 'd', description: 'Acme', amount: 6000, date: '2025-08-01', taxYear: '2025-26' }] }) }))
+    const without = projectTaxYear(baseInput())
+    // dividends are not withheld by PAYE, so they raise the year-end set-aside
+    expect(withDiv.shortfall).toBeGreaterThan(without.shortfall)
   })
 
   it('produces a positive projected tax due for a normal earner', () => {
@@ -81,7 +82,10 @@ describe('projectTaxYear', () => {
     expect(['basic', 'higher', 'additional']).toContain(p.band)
   })
 
-  it('carries plain-English assumptions', () => {
-    expect(projectTaxYear(baseInput()).assumptions.length).toBeGreaterThan(0)
+  it('explains its run-rate assumption, and switches to stated-salary wording', () => {
+    const runRate = projectTaxYear(baseInput())
+    expect(runRate.assumptions.some(a => /typical month/i.test(a))).toBe(true)
+    const stated = projectTaxYear(baseInput({ baseAnnualSalary: 72000 }))
+    expect(stated.assumptions.some(a => /stated base salary/i.test(a))).toBe(true)
   })
 })

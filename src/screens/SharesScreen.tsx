@@ -22,6 +22,10 @@ import type { ShareLot } from '../types'
 const DEFAULT_SYMBOL = 'SAP.DE'
 const DEFAULT_NATIVE_CCY = 'EUR'
 const REFERENCE_CCY = 'GBP'
+// Built-in price proxy (Cloudflare Worker) so live prices work out of the box on
+// every device without manual setup. Not a secret — it's a public endpoint with
+// a strict symbol allowlist. A URL saved in Price settings overrides this.
+const DEFAULT_PROXY_URL = 'https://taxtracker-price-proxy.spitefulgrain40.workers.dev'
 
 // Native currency symbol for display — never hardcode a single currency, since
 // Mike's SAP holding is EUR and future schemes may be USD.
