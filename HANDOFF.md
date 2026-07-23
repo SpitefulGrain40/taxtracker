@@ -1,6 +1,15 @@
 # Picking up TaxTracker on your personal PC
 
-_Last handoff: 18 July 2026 · branch `dev` · everything below is pushed to GitHub._
+_Last handoff: 23 July 2026 · branch `dev` · everything below is pushed to GitHub._
+
+> **Update 23 July 2026:** The share-price proxy is **deployed and wired** — the
+> Worker (`https://taxtracker-price-proxy.spitefulgrain40.workers.dev`) is baked
+> in as the default, so live SAP prices work with no per-device setup. A
+> black-screen-after-onboarding bug on staging was fixed (router basename now
+> derives from the deploy base). Plans 7 (editable data) and 8 (projection engine
+> + Dashboard/Income period toggle) landed. A dev-only `?seed` mode lets you skip
+> onboarding with dummy data while testing — see "Local testing" below. Still
+> open: enter your real credentials (Step 3) and promote `dev`→`main` (Step 4).
 
 This is your "where did I leave off and how do I continue" guide. Everything is committed and pushed to `dev`, so you start by cloning and pulling.
 
@@ -10,10 +19,10 @@ This is your "where did I leave off and how do I continue" guide. Everything is 
 
 - **The app is functionally complete.** All six build plans are done. 103 tests pass, clean build, `npm audit` = 0 vulnerabilities.
 - **Verified against your real SAP data** (payslip, P11D, P60, portfolio export) and your **live credentials passed 4/4** (GitHub read + write, Claude API).
-- **Three things remain**, none blocking, all covered below:
-  1. Deploy the share-price proxy (one command on your Cloudflare account)
-  2. Enter your GitHub PAT + Claude key in the browser on the hosted app
-  3. Optional: merge `dev` → `main` to promote to production when you're happy
+- **Remaining**, none blocking, all covered below:
+  1. ~~Deploy the share-price proxy~~ — **done** (deployed + baked in as default; Step 2 kept below for reference / redeploys)
+  2. Enter your GitHub PAT + Claude key in the browser on the hosted app (Step 3)
+  3. Optional: merge `dev` → `main` to promote to production when you're happy (Step 4)
 
 ---
 
@@ -32,9 +41,20 @@ npm run dev               # http://localhost:5173/taxtracker/
 Quick sanity check that the checkout is healthy:
 
 ```bash
-npm run test              # expect 103 passing
+npm run test              # expect 134 passing
 npm run build             # expect a clean build
 ```
+
+### Testing without re-onboarding (dev only)
+
+Onboarding on every test is painful, so local dev has a seed mode:
+
+- `http://localhost:5173/taxtracker/?seed` — skips setup / PIN / onboarding and
+  loads dummy data (SAP EUR ESPP profile, a tax year, 3 share lots).
+- `http://localhost:5173/taxtracker/?seed=off` — turns it back off.
+
+Hard-gated to the dev build (`import.meta.env.DEV`), so it never ships to staging
+or production. Saving is disabled in seed mode (no real data repo).
 
 ---
 
@@ -121,7 +141,7 @@ Open the `taxtracker` folder in Claude Code. It reads `CLAUDE.md` automatically 
 
 ## Known limitations (none are blockers — see FULL_BUILD_TEST_REPORT.md for detail)
 
-1. **Live price needs the proxy deployed** (Step 2). Until then the app falls back to your last purchase price and invites you to enter a price manually.
+1. **Live price** is deployed and wired (default Worker baked in). If the Worker is ever unreachable, the app falls back to your last purchase price and invites you to enter one manually.
 2. **CGT uses Section 104 pooling** (the correct UK default) — it doesn't model same-day / 30-day matching.
 3. **GBP conversion is at today's rate for display.** The real CGT filing figure needs the FX rate on the actual acquisition/disposal dates — a documented refinement.
 4. **Discounted-ESPP cost basis** (Gemma's future scheme) needs a small importer tweak when she's added.

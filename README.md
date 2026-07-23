@@ -186,7 +186,7 @@ npm run test:watch    # watch mode
 npm run test:coverage # coverage report
 ```
 
-103 tests passing across the tax engine, CGT pooling, portfolio import, income summary, tax-return assembly, encrypted export, the price proxy client, auth, GitHub client, and UI components. `npm audit` reports 0 vulnerabilities.
+134 tests passing across the tax engine, CGT pooling, portfolio import, income summary, full-year projection, tax-return assembly, encrypted export, the price proxy client, auth, GitHub client, and UI components. `npm audit` reports 0 vulnerabilities.
 
 ---
 
@@ -202,7 +202,7 @@ GitHub Actions handles deployment automatically:
 
 ---
 
-## What's built (all six plans complete)
+## What's built (all plans complete)
 
 - [x] **Plan 1 — Foundation:** React + Vite + Tailwind v4 scaffold, all TypeScript types, GitHub data client, PBKDF2 PIN auth, tax year utilities, core UI components, desktop + mobile nav, PIN/setup screens, GitHub Actions CI/CD
 - [x] **Plan 2 — Onboarding + Extraction:** first-run setup wizard, onboarding, share scheme config (ESPP match / discounted / RSU), payslip PDF/image upload → Claude extraction → confirm
@@ -210,12 +210,14 @@ GitHub Actions handles deployment automatically:
 - [x] **Plan 4 — Documents:** payslip / P11D / P60 upload + Claude extraction, review-and-confirm, immutable state updates
 - [x] **Plan 5 — Share Schemes + CGT:** permanent lot register, portfolio XLSX import (fflate-based, no vulnerable deps), Section 104 pooling, live EUR price + GBP reference, "if I sell today" CGT calculator
 - [x] **Plan 6 — Tax Return:** SA100/SA102/dividends/savings/CGT summary with plain-English box mapping, readiness score, copy-to-HMRC, AES-GCM encrypted export
+- [x] **Plan 7 — Editable data foundation:** editable stored data, salary onboarding step
+- [x] **Plan 8 — Projection engine + presentation:** `projectTaxYear` full-year projection, Dashboard/Income "This month / YTD / Projected" period toggle, future income events
 
 The app is functionally complete and verified end-to-end against Mike's real SAP data. See `FULL_BUILD_TEST_REPORT.md` for the test breakdown.
 
 ## What's left before wider use
 
-- **Deploy the price proxy** (`price-proxy/` — one-time `wrangler deploy`, see its README) and paste the Worker URL into the Shares screen so live prices work
+- **Live price is deployed and wired** — the Cloudflare Worker is baked in as the default proxy, so SAP prices work with no per-device setup (`price-proxy/` for redeploys / CORS changes)
 - **Live document extraction** on the hosted app needs your GitHub PAT + Claude API key entered in the browser (see setup above)
 - Optional refinements documented in `FULL_BUILD_TEST_REPORT.md` (CGT historical FX rates, 30-day CGT matching, discounted-ESPP cost basis for Gemma)
 

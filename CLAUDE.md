@@ -10,7 +10,7 @@ UK personal tax tracker PWA for Mike and Gemma. React + Vite + Tailwind CSS v4, 
 - **Design tokens live in `src/index.css` `@theme` block** — not `tailwind.config.ts`. Tailwind v4 does not read `tailwind.config.ts` for tokens.
 - **No backend.** This is a static PWA. No server, no environment variables at runtime, no secrets in source code.
 - **Secrets in localStorage only** — GitHub PAT and Claude API key are entered by the user and stored in `localStorage`. They must never appear in source code, git history, or the data repo.
-- **Run `npm run test` after any change to `src/lib/` or `src/components/ui/`.** All 19 tests must pass before committing.
+- **Run `npm run test` after any change to `src/lib/` or `src/components/ui/`.** All tests (134 at last count) must pass before committing.
 
 ## Project identity
 
@@ -23,16 +23,16 @@ UK personal tax tracker PWA for Mike and Gemma. React + Vite + Tailwind CSS v4, 
 4. Share Schemes — lot register, CGT calculator, "what if I sell?" tool
 5. Tax Return — SA100/SA102/CGT summary, copy-to-HMRC, encrypted export
 
-**What's built (Plan 1):** Scaffold, types, auth, GitHub API client, tax year utilities, UI components, navigation, PIN/setup screens, routing, CI/CD.
+**What's built:** All five screens are functional (Plans 1–8 complete — see Build progress). Onboarding, Claude document extraction, live tax position with full-year projection, share lots + CGT with live pricing, and the tax-return builder with encrypted export are all in place.
 
-**Current branch:** `dev` — all Plans 2–6 go here.
+**Current branch:** `dev` — all work goes here; `main` is production. Never commit to `main` directly (merge `dev`→`main` to release).
 
 ## Tech stack
 
 - React 18 + Vite + TypeScript
 - Tailwind CSS v4 — tokens in `src/index.css @theme`, NOT tailwind.config.ts
 - Lucide React — icons only, never emojis
-- React Router v6 — `basename="/taxtracker"`
+- React Router v6 — basename derived from `import.meta.env.BASE_URL` in `src/AppRouter.tsx` (matches the deploy base: `/taxtracker/` prod, `/taxtracker-dev/` staging, `/` local). Never hardcode the basename — a mismatch renders a blank screen.
 - `@octokit/rest` — GitHub API data layer
 - Vitest + React Testing Library
 - `claude-opus-4-8` — document extraction (vision + structured output)
@@ -66,7 +66,11 @@ Text secondary:  #857F77
 | `src/lib/taxYears.ts` | UK tax year utilities — 6 April boundary, tax periods |
 | `src/components/ui/JargonTip.tsx` | Tax term tooltip — dashed copper underline, hover/tap |
 | `src/components/ui/StatCard.tsx` | Stat display — label, value (serif font), variant colour |
-| `src/App.tsx` | Auth gate: setup → PIN → router |
+| `src/App.tsx` | Auth gate: dev-seed → setup → PIN → onboarding → router |
+| `src/AppRouter.tsx` | Router shell; basename from `import.meta.env.BASE_URL` |
+| `src/lib/priceProxy.ts` | `fetchLivePrice()` — calls the Cloudflare Worker proxy |
+| `src/lib/projection.ts` | `projectTaxYear()` — full-year income/tax projection (Plan 8) |
+| `src/lib/devSeed.ts` | Dev-only `?seed` bypass + dummy data (inert in prod) |
 | `src/index.css` | Tailwind v4 @import + all design tokens in @theme |
 
 ## Data repo structure
@@ -119,11 +123,17 @@ Salary changes, pension contribution changes, RSU vest events, employment change
 ## Build progress
 
 - **Plan 1 (Foundation)** ✅ — scaffold, auth, GitHub data layer, nav, PIN/setup, CI/CD
-- **Plan 2 (Onboarding + Extraction)** ✅ — setup wizard, payslip upload, Claude extraction, scheme config, `useProfile`/`useTaxYear` hooks. On `dev`/staging.
-- **Plan 3 (Dashboard + Income)** — in progress
-- **Plan 4 (Documents)** — pending: full doc management, P11D + P60 extraction
-- **Plan 5 (Share Schemes + CGT)** — pending: lot register, portfolio XLSX import, CGT "what if I sell" calculator
-- **Plan 6 (Tax Return)** — pending: SA100/SA102/CGT summary, encrypted export
+- **Plan 2 (Onboarding + Extraction)** ✅ — setup wizard, payslip upload, Claude extraction, scheme config, `useProfile`/`useTaxYear` hooks
+- **Plan 3 (Dashboard + Income)** ✅ — live tax position, income breakdown + forecaster, band-aware dividend/savings tax
+- **Plan 4 (Documents)** ✅ — upload/extract payslips, P11D, P60
+- **Plan 5 (Share Schemes + CGT)** ✅ — lot register, portfolio XLSX import (Section 104), CGT "what if I sell", live price via Cloudflare Worker proxy (EUR-native + GBP reference)
+- **Plan 6 (Tax Return)** ✅ — SA100/SA102/CGT summary, copy-to-HMRC, AES-GCM encrypted export
+- **Plan 7 (Editable data foundation)** ✅ — editable stored data, salary onboarding step (`docs/superpowers/plans/2026-07-20-plan-7-editable-data-foundation.md`)
+- **Plan 8 (Projection engine + presentation)** ✅ — `projectTaxYear` full-year projection, Dashboard/Income "This month / YTD / Projected" period toggle, future income events (`src/lib/projection.ts`, `src/hooks/useFutureEvents.ts`, `src/components/ui/PeriodToggle.tsx`)
+
+Live-price + local-testing tooling (2026-07-23):
+- **Live price default:** `src/screens/SharesScreen.tsx` bakes the deployed Cloudflare Worker (`https://taxtracker-price-proxy.spitefulgrain40.workers.dev`) as the default proxy so live SAP prices work with no per-device setup; a URL saved in Price settings overrides it. Proxy code + deploy guide in `price-proxy/`.
+- **Dev seed:** `src/lib/devSeed.ts` — visit `?seed` (or `?seed=off`) in local dev to skip setup/PIN/onboarding and load dummy data (SAP profile, tax year, 3 lots). Hard-gated to `import.meta.env.DEV`; inert in staging/production. Saving is disabled in seed mode.
 
 Key modules from Plan 2 available for reuse:
 - `src/lib/claude.ts` — `extractPayslip()`, `parsePayslipResponse()`
@@ -142,7 +152,7 @@ Key modules from Plan 2 available for reuse:
 ```bash
 npm run dev           # local dev server at localhost:5173/taxtracker/
 npm run build         # production build to dist/
-npm run test          # run all tests (19 passing)
+npm run test          # run all tests (134 passing)
 npm run test:watch    # watch mode
 npm run test:coverage # coverage report
 ```
