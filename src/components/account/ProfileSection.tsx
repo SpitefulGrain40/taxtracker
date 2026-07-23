@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Check, TriangleAlert } from 'lucide-react'
 import { JargonTip } from '../ui/JargonTip'
+import { buildUpdatedProfile } from '../../lib/profileEdit'
 import type { Profile } from '../../types'
 
 interface Props {
@@ -22,14 +23,12 @@ export function ProfileSection({ profile, onSave }: Props) {
   const handleSave = async () => {
     setState('saving')
     const salary = baseAnnualSalary ? Number(baseAnnualSalary) : null
-    const updated: Profile = {
-      ...profile,
+    const updated = buildUpdatedProfile(profile, {
       firstName,
       niNumber,
       taxCode,
-      ...(salary != null && !Number.isNaN(salary) ? { baseAnnualSalary: salary } : {}),
-    }
-    if (salary == null) delete updated.baseAnnualSalary
+      baseAnnualSalary: salary != null && !Number.isNaN(salary) ? salary : null,
+    })
 
     try {
       await onSave(updated)
