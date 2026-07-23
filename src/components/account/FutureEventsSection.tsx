@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Check, TriangleAlert, Trash2 } from 'lucide-react'
 import { JargonTip } from '../ui/JargonTip'
+import { parseMoney } from '../../lib/money'
 import type { FutureIncomeEvent, FutureIncomeEventType, TaxYearKey } from '../../types'
 
 interface Props {
@@ -20,15 +21,6 @@ const TYPE_LABELS: Record<FutureIncomeEventType, string> = {
   bonus: 'Bonus',
   'pay-rise': 'Pay rise',
   'rsu-vest': 'RSU vest',
-}
-
-// Empty means zero. Anything that isn't a clean number is rejected, never coerced.
-const parseMoney = (raw: string): number | null => {
-  const t = raw.trim()
-  if (t === '') return 0
-  if (!/^\d+(\.\d+)?$/.test(t)) return null
-  const n = Number(t)
-  return Number.isFinite(n) ? n : null
 }
 
 const formatMoney = (amount: number) =>

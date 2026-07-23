@@ -1,6 +1,7 @@
 import { ProfileSection } from '../components/account/ProfileSection'
 import { PayslipSection } from '../components/account/PayslipSection'
 import { FutureEventsSection } from '../components/account/FutureEventsSection'
+import { SchemesSection } from '../components/account/SchemesSection'
 import { useProfile } from '../hooks/useProfile'
 import { useTaxYear } from '../hooks/useTaxYear'
 import { useFutureEvents } from '../hooks/useFutureEvents'
@@ -34,6 +35,7 @@ export function AccountScreen() {
           {!eventsLoading && (
             <FutureEventsSection events={events} taxYearKey={getCurrentTaxYear()} onSave={saveEvents} />
           )}
+          <SchemesSection profile={profile} onSave={saveProfile} />
         </div>
       )}
     </div>

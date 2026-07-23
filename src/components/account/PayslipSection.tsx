@@ -3,6 +3,7 @@ import { Check, TriangleAlert } from 'lucide-react'
 import { JargonTip } from '../ui/JargonTip'
 import { Link } from 'react-router-dom'
 import { applyPayslipEdits, findLatestPayslip } from '../../lib/payslipEdit'
+import { parseMoney } from '../../lib/money'
 import type { TaxYear } from '../../types'
 
 interface Props {
@@ -15,15 +16,6 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 const numericInputClass =
   'w-full bg-surface border border-white/10 rounded-lg px-3 py-2.5 text-sm text-text-1 font-mono focus:outline-none focus:border-accent/50'
 const labelClass = 'block text-[11px] uppercase tracking-[.06em] text-text-2 mb-1.5'
-
-// Empty means zero. Anything that isn't a clean number is rejected, never coerced.
-const parseMoney = (raw: string): number | null => {
-  const t = raw.trim()
-  if (t === '') return 0
-  if (!/^\d+(\.\d+)?$/.test(t)) return null
-  const n = Number(t)
-  return Number.isFinite(n) ? n : null
-}
 
 export function PayslipSection({ taxYear, onSave }: Props) {
   // Pinned once at mount so the edit target can never drift out from under the
