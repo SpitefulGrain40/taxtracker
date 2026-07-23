@@ -1,5 +1,5 @@
 import type { GitHubDataClient } from './github'
-import type { Profile, TaxYear, ShareLot, LifeEvent, ProfileId, TaxYearKey, Payslip, FutureIncomeEvent } from '../types'
+import type { Profile, TaxYear, ShareLot, LifeEvent, ProfileId, TaxYearKey, Payslip, FutureIncomeEvent, FeedbackEntry } from '../types'
 
 // ─── Path helpers ─────────────────────────────────────────────────────────────
 
@@ -89,4 +89,18 @@ export function taxYearWithPayslip(key: TaxYearKey, payslip: Payslip): TaxYear {
       payslips: [payslip],
     }],
   }
+}
+
+// ─── Feedback (shared across profiles) ────────────────────────────────────────
+
+export const feedbackPath = () => 'feedback.json'
+
+export async function readFeedback(client: GitHubDataClient) {
+  return client.readFile<FeedbackEntry[]>(feedbackPath())
+}
+
+export async function appendFeedback(client: GitHubDataClient, entry: FeedbackEntry) {
+  const existing = await readFeedback(client)
+  const next = [...(existing?.data ?? []), entry]
+  return client.writeFile(feedbackPath(), next, existing?.sha)
 }

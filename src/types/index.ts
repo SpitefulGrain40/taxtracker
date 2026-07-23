@@ -148,6 +148,17 @@ export interface FutureIncomeEvent {
   subjectToNI?: boolean    // default true for bonus/pay-rise/rsu-vest
 }
 
+// ─── Feedback ─────────────────────────────────────────────────────────────────
+
+export interface FeedbackEntry {
+  id: string
+  text: string
+  screen: string          // route the user was on when they submitted
+  profileId: ProfileId
+  appEnv: string          // import.meta.env.MODE — distinguishes staging vs production
+  createdAt: string       // ISO
+}
+
 // ─── Profile ─────────────────────────────────────────────────────────────────
 
 export type ProfileId = 'mike' | 'gemma'
