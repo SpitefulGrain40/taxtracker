@@ -134,6 +134,20 @@ export interface LifeEvent {
   data: Record<string, unknown> // typed per event type — see lib/lifeEvents.ts
 }
 
+// ─── Future income events ─────────────────────────────────────────────────────
+
+export type FutureIncomeEventType = 'bonus' | 'pay-rise' | 'rsu-vest'
+
+export interface FutureIncomeEvent {
+  id: string
+  type: FutureIncomeEventType
+  label: string
+  amount: number          // GBP; for 'pay-rise' this is the new ANNUAL salary
+  effectiveDate: string   // ISO; must fall within the tax year to affect it
+  taxYear: TaxYearKey
+  subjectToNI?: boolean    // default true for bonus/pay-rise/rsu-vest
+}
+
 // ─── Profile ─────────────────────────────────────────────────────────────────
 
 export type ProfileId = 'mike' | 'gemma'
@@ -148,6 +162,7 @@ export interface Profile {
   githubPat: string         // stored encrypted in repo; PAT is in localStorage only
   schemes: ShareSchemeConfig[]
   otherIncomeSources: ('dividends' | 'savings' | 'cgt' | 'rsu-vests' | 'benefits')[]
+  baseAnnualSalary?: number   // GBP; user-stated current annual base salary
 }
 
 // ─── Glossary ─────────────────────────────────────────────────────────────────

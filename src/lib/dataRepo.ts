@@ -1,5 +1,5 @@
 import type { GitHubDataClient } from './github'
-import type { Profile, TaxYear, ShareLot, LifeEvent, ProfileId, TaxYearKey } from '../types'
+import type { Profile, TaxYear, ShareLot, LifeEvent, ProfileId, TaxYearKey, Payslip, FutureIncomeEvent } from '../types'
 
 // ─── Path helpers ─────────────────────────────────────────────────────────────
 
@@ -59,4 +59,34 @@ export async function readLifeEvents(client: GitHubDataClient, profileId: Profil
 
 export async function writeLifeEvents(client: GitHubDataClient, profileId: ProfileId | string, events: LifeEvent[], sha?: string) {
   return client.writeFile(lifeEventsPath(profileId), events, sha)
+}
+
+// ─── Future income events ─────────────────────────────────────────────────────
+
+export const futureEventsPath = (profileId: ProfileId | string) => `data/${profileId}/future-events.json`
+
+export function emptyFutureEvents(): FutureIncomeEvent[] {
+  return []
+}
+
+export async function readFutureEvents(client: GitHubDataClient, profileId: ProfileId | string) {
+  return client.readFile<FutureIncomeEvent[]>(futureEventsPath(profileId))
+}
+
+export async function writeFutureEvents(client: GitHubDataClient, profileId: ProfileId | string, events: FutureIncomeEvent[], sha?: string) {
+  return client.writeFile(futureEventsPath(profileId), events, sha)
+}
+
+// ─── Tax year from a single payslip ───────────────────────────────────────────
+
+export function taxYearWithPayslip(key: TaxYearKey, payslip: Payslip): TaxYear {
+  const base = emptyTaxYear(key)
+  return {
+    ...base,
+    employment: [{
+      id: `emp-${payslip.employerName.toLowerCase().replace(/\s+/g, '-')}`,
+      employerName: payslip.employerName,
+      payslips: [payslip],
+    }],
+  }
 }
