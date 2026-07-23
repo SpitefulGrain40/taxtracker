@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { getDataClient } from '../lib/github'
 import { readProfile, writeProfile } from '../lib/dataRepo'
 import { storage } from '../lib/storage'
+import { isDevSeedActive, seedProfile } from '../lib/devSeed'
 import type { Profile, ProfileId } from '../types'
 
 interface UseProfileResult {
@@ -21,6 +22,10 @@ export function useProfile(profileId: ProfileId): UseProfileResult {
   const [tick, setTick] = useState(0)
 
   useEffect(() => {
+    if (isDevSeedActive()) {
+      setProfile(seedProfile(profileId)); setSha('dev'); setError(null); setLoading(false)
+      return
+    }
     const pat = storage.getGithubPat()
     const repo = localStorage.getItem('tt_data_repo')
     if (!pat || !repo) { setLoading(false); return }

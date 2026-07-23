@@ -17,11 +17,16 @@ import { summariseTaxYear } from '../lib/incomeSummary'
 import { marginalBand } from '../lib/taxCalc'
 import { CURRENT_RATES as R } from '../lib/taxRates'
 import { fetchLivePrice, type LivePrice } from '../lib/priceProxy'
+import { isDevSeedActive, seedShareLots } from '../lib/devSeed'
 import type { ShareLot } from '../types'
 
 const DEFAULT_SYMBOL = 'SAP.DE'
 const DEFAULT_NATIVE_CCY = 'EUR'
 const REFERENCE_CCY = 'GBP'
+// Built-in price proxy (Cloudflare Worker) so live prices work out of the box on
+// every device without manual setup. Not a secret — it's a public endpoint with
+// a strict symbol allowlist. A URL saved in Price settings overrides this.
+const DEFAULT_PROXY_URL = 'https://taxtracker-price-proxy.spitefulgrain40.workers.dev'
 
 // Native currency symbol for display — never hardcode a single currency, since
 // Mike's SAP holding is EUR and future schemes may be USD.
@@ -49,11 +54,12 @@ export function SharesScreen() {
   const [manualPrice, setManualPrice] = useState<number | null>(null)
   const [priceState, setPriceState] = useState<'idle' | 'loading' | 'ok' | 'unavailable'>('idle')
   const [showPriceSettings, setShowPriceSettings] = useState(false)
-  const [proxyUrl, setProxyUrl] = useState(storage.getPriceProxyUrl() ?? '')
+  const [proxyUrl, setProxyUrl] = useState(storage.getPriceProxyUrl() || DEFAULT_PROXY_URL)
   const [symbol, setSymbol] = useState(storage.getPriceSymbol(profileId) ?? DEFAULT_SYMBOL)
 
   // Load lots from data repo
   useEffect(() => {
+    if (isDevSeedActive()) { setLots(seedShareLots()); setSha(undefined); return }
     const pat = storage.getGithubPat()
     const repo = localStorage.getItem('tt_data_repo')
     if (!pat || !repo) { setLots([]); return }
@@ -66,7 +72,7 @@ export function SharesScreen() {
   // Best-effort live price fetch once lots have loaded.
   useEffect(() => {
     if (lots === null) return
-    const url = storage.getPriceProxyUrl()
+    const url = storage.getPriceProxyUrl() || DEFAULT_PROXY_URL
     const sym = storage.getPriceSymbol(profileId) || DEFAULT_SYMBOL
     if (!url || !sym) { setPriceState('idle'); return }
     const from = profile?.schemes[0]?.currency || DEFAULT_NATIVE_CCY
@@ -83,7 +89,7 @@ export function SharesScreen() {
   }, [lots, profileId, profile])
 
   const refreshPrice = () => {
-    const url = storage.getPriceProxyUrl()
+    const url = storage.getPriceProxyUrl() || DEFAULT_PROXY_URL
     const sym = storage.getPriceSymbol(profileId) || DEFAULT_SYMBOL
     if (!url || !sym) { setPriceState('idle'); return }
     const from = profile?.schemes[0]?.currency || DEFAULT_NATIVE_CCY
@@ -125,7 +131,9 @@ export function SharesScreen() {
   const gbpValue = fx?.rate != null ? nativeValue * fx.rate : null
   const gbpPricePerShare = fx?.rate != null ? effectivePrice * fx.rate : null
 
-  const hasProxy = Boolean(storage.getPriceProxyUrl())
+  // A price source is always available now (saved URL, else the built-in default),
+  // so this reflects the *effective* proxy — not just an explicitly saved one.
+  const hasProxy = Boolean(storage.getPriceProxyUrl() || DEFAULT_PROXY_URL)
 
   // Which price source is actually driving the effective price?
   const priceSource: 'manual' | 'live' | 'fallback' =

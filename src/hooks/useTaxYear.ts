@@ -3,6 +3,7 @@ import { getDataClient } from '../lib/github'
 import { readTaxYear, writeTaxYear, emptyTaxYear } from '../lib/dataRepo'
 import { storage } from '../lib/storage'
 import { getCurrentTaxYear } from '../lib/taxYears'
+import { isDevSeedActive, seedTaxYear } from '../lib/devSeed'
 import type { TaxYear, ProfileId, TaxYearKey } from '../types'
 
 interface UseTaxYearResult {
@@ -23,6 +24,10 @@ export function useTaxYear(profileId: ProfileId, year?: TaxYearKey): UseTaxYearR
   const [tick, setTick] = useState(0)
 
   useEffect(() => {
+    if (isDevSeedActive()) {
+      setTaxYear(seedTaxYear(key)); setSha('dev'); setError(null); setLoading(false)
+      return
+    }
     const pat = storage.getGithubPat()
     const repo = localStorage.getItem('tt_data_repo')
     if (!pat || !repo) { setLoading(false); return }
