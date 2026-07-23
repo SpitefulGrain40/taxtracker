@@ -10,7 +10,7 @@ import { AppRouter } from './AppRouter'
 // which under test is '/', so the dashboard route must resolve at pathname '/'.
 describe('AppRouter', () => {
   it('renders the dashboard route at the served base path (no black screen)', () => {
-    render(<AppRouter />)
+    render(<AppRouter onLock={() => {}} />)
     // With no PAT configured the dashboard shows its loading state — its
     // presence proves the route matched rather than rendering a blank page.
     expect(screen.getByText(/Loading your tax position/i)).toBeInTheDocument()

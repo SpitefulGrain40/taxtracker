@@ -1,4 +1,4 @@
-import { LayoutDashboard, PoundSterling, FileText, TrendingUp, ClipboardCheck } from 'lucide-react'
+import { LayoutDashboard, PoundSterling, FileText, TrendingUp, MoreHorizontal } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 const TABS = [
@@ -6,10 +6,13 @@ const TABS = [
   { to: '/income', label: 'Income', icon: PoundSterling },
   { to: '/documents', label: 'Docs', icon: FileText },
   { to: '/shares', label: 'Shares', icon: TrendingUp },
-  { to: '/return', label: 'Return', icon: ClipboardCheck },
 ]
 
-export function MobileNav() {
+interface Props {
+  onMoreClick: () => void
+}
+
+export function MobileNav({ onMoreClick }: Props) {
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-white/[0.06] z-50">
       <div className="grid grid-cols-5">
@@ -32,6 +35,13 @@ export function MobileNav() {
             )}
           </NavLink>
         ))}
+        <button
+          onClick={onMoreClick}
+          className="flex flex-col items-center gap-[3px] py-3 text-[8px] text-text-3 transition-colors"
+        >
+          <MoreHorizontal size={18} strokeWidth={1.8} />
+          More
+        </button>
       </div>
     </nav>
   )

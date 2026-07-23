@@ -8,7 +8,7 @@ import { isDevSeedActive } from './lib/devSeed'
 import { useState } from 'react'
 
 export function App() {
-  const { unlocked, error, attemptUnlock } = useAuth()
+  const { unlocked, error, attemptUnlock, lock } = useAuth()
   const [setupDone, setSetupDone] = useState(() => storage.isSetupComplete())
   const [onboardingDone, setOnboardingDone] = useState(() =>
     storage.isOnboardingComplete(storage.getActiveProfile())
@@ -17,7 +17,7 @@ export function App() {
   // Dev-only: skip setup/PIN/onboarding and go straight to the app with dummy
   // data. Inert in staging/production builds (see lib/devSeed).
   if (isDevSeedActive()) {
-    return <AppRouter />
+    return <AppRouter onLock={lock} />
   }
 
   if (!setupDone) {
@@ -37,5 +37,5 @@ export function App() {
     )
   }
 
-  return <AppRouter />
+  return <AppRouter onLock={lock} />
 }

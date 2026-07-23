@@ -1,4 +1,4 @@
-import { LayoutDashboard, PoundSterling, FileText, TrendingUp, ClipboardCheck, ChevronDown } from 'lucide-react'
+import { LayoutDashboard, PoundSterling, FileText, TrendingUp, MoreHorizontal, ChevronDown } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 const NAV_ITEMS = [
@@ -6,15 +6,15 @@ const NAV_ITEMS = [
   { to: '/income', label: 'Income', icon: <PoundSterling size={14} /> },
   { to: '/documents', label: 'Documents', icon: <FileText size={14} /> },
   { to: '/shares', label: 'Share Schemes', icon: <TrendingUp size={14} /> },
-  { to: '/return', label: 'Tax Return', icon: <ClipboardCheck size={14} /> },
 ]
 
 interface Props {
   profileName: string
   onProfileClick: () => void
+  onMoreClick: () => void
 }
 
-export function DesktopNav({ profileName, onProfileClick }: Props) {
+export function DesktopNav({ profileName, onProfileClick, onMoreClick }: Props) {
   return (
     <nav className="hidden md:flex items-center justify-between px-8 h-14 border-b border-white/[0.06] bg-bg sticky top-0 z-50">
       <div className="font-serif text-[20px] tracking-[-0.02em]">
@@ -38,6 +38,13 @@ export function DesktopNav({ profileName, onProfileClick }: Props) {
             {item.label}
           </NavLink>
         ))}
+        <button
+          onClick={onMoreClick}
+          className="flex items-center gap-[7px] px-3.5 py-1.5 rounded-md text-[13px] font-medium text-text-2 hover:text-text-1 hover:bg-surface-3 transition-colors"
+        >
+          <MoreHorizontal size={14} />
+          More
+        </button>
       </div>
       <button
         onClick={onProfileClick}
