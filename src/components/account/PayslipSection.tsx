@@ -16,20 +16,34 @@ const numericInputClass =
   'w-full bg-surface border border-white/10 rounded-lg px-3 py-2.5 text-sm text-text-1 font-mono focus:outline-none focus:border-accent/50'
 const labelClass = 'block text-[11px] uppercase tracking-[.06em] text-text-2 mb-1.5'
 
+// Empty means zero. Anything that isn't a clean number is rejected, never coerced.
+const parseMoney = (raw: string): number | null => {
+  const t = raw.trim()
+  if (t === '') return 0
+  if (!/^\d+(\.\d+)?$/.test(t)) return null
+  const n = Number(t)
+  return Number.isFinite(n) ? n : null
+}
+
 export function PayslipSection({ taxYear, onSave }: Props) {
-  const latest = findLatestPayslip(taxYear)
+  // Pinned once at mount so the edit target can never drift out from under the
+  // form as `taxYear` changes across re-renders (e.g. after this component's
+  // own save updates the parent's state, potentially changing which payslip
+  // `findLatestPayslip` would now return).
+  const [target] = useState(() => findLatestPayslip(taxYear))
 
-  const [ytdGross, setYtdGross] = useState(latest ? String(latest.payslip.ytdGross) : '')
-  const [ytdTaxPaid, setYtdTaxPaid] = useState(latest ? String(latest.payslip.ytdTaxPaid) : '')
-  const [ytdEmployeeNI, setYtdEmployeeNI] = useState(latest ? String(latest.payslip.ytdEmployeeNI) : '')
-  const [basicSalary, setBasicSalary] = useState(latest ? String(latest.payslip.basicSalary) : '')
-  const [taxPaid, setTaxPaid] = useState(latest ? String(latest.payslip.taxPaid) : '')
-  const [employeeNI, setEmployeeNI] = useState(latest ? String(latest.payslip.employeeNI) : '')
-  const [taxCode, setTaxCode] = useState(latest ? latest.payslip.taxCode : '')
-  const [taxPeriod, setTaxPeriod] = useState(latest ? String(latest.payslip.taxPeriod) : '')
+  const [ytdGross, setYtdGross] = useState(target ? String(target.payslip.ytdGross) : '')
+  const [ytdTaxPaid, setYtdTaxPaid] = useState(target ? String(target.payslip.ytdTaxPaid) : '')
+  const [ytdEmployeeNI, setYtdEmployeeNI] = useState(target ? String(target.payslip.ytdEmployeeNI) : '')
+  const [basicSalary, setBasicSalary] = useState(target ? String(target.payslip.basicSalary) : '')
+  const [taxPaid, setTaxPaid] = useState(target ? String(target.payslip.taxPaid) : '')
+  const [employeeNI, setEmployeeNI] = useState(target ? String(target.payslip.employeeNI) : '')
+  const [taxCode, setTaxCode] = useState(target ? target.payslip.taxCode : '')
+  const [taxPeriod, setTaxPeriod] = useState(target ? String(target.payslip.taxPeriod) : '')
   const [state, setState] = useState<SaveState>('idle')
+  const [errorMessage, setErrorMessage] = useState('')
 
-  if (!latest) {
+  if (!target) {
     return (
       <div className="bg-surface border border-white/[0.06] rounded-[10px] p-5">
         <h2 className="font-serif text-base mb-2">Payslip figures</h2>
@@ -42,15 +56,35 @@ export function PayslipSection({ taxYear, onSave }: Props) {
   }
 
   const handleSave = async () => {
+    const parsedYtdGross = parseMoney(ytdGross)
+    const parsedYtdTaxPaid = parseMoney(ytdTaxPaid)
+    const parsedYtdEmployeeNI = parseMoney(ytdEmployeeNI)
+    const parsedBasicSalary = parseMoney(basicSalary)
+    const parsedTaxPaid = parseMoney(taxPaid)
+    const parsedEmployeeNI = parseMoney(employeeNI)
+
+    if (
+      parsedYtdGross === null ||
+      parsedYtdTaxPaid === null ||
+      parsedYtdEmployeeNI === null ||
+      parsedBasicSalary === null ||
+      parsedTaxPaid === null ||
+      parsedEmployeeNI === null
+    ) {
+      setErrorMessage("Check the figures — one of them isn't a valid number.")
+      setState('error')
+      return
+    }
+
     setState('saving')
-    const period = Math.min(12, Math.max(1, Number(taxPeriod) || latest.payslip.taxPeriod))
-    const updated = applyPayslipEdits(taxYear, latest.employmentId, latest.payslip.id, {
-      ytdGross: Number(ytdGross) || 0,
-      ytdTaxPaid: Number(ytdTaxPaid) || 0,
-      ytdEmployeeNI: Number(ytdEmployeeNI) || 0,
-      basicSalary: Number(basicSalary) || 0,
-      taxPaid: Number(taxPaid) || 0,
-      employeeNI: Number(employeeNI) || 0,
+    const period = Math.round(Math.min(12, Math.max(1, Number(taxPeriod) || target.payslip.taxPeriod)))
+    const updated = applyPayslipEdits(taxYear, target.employmentId, target.payslip.id, {
+      ytdGross: parsedYtdGross,
+      ytdTaxPaid: parsedYtdTaxPaid,
+      ytdEmployeeNI: parsedYtdEmployeeNI,
+      basicSalary: parsedBasicSalary,
+      taxPaid: parsedTaxPaid,
+      employeeNI: parsedEmployeeNI,
       taxCode,
       taxPeriod: period,
     })
@@ -59,6 +93,7 @@ export function PayslipSection({ taxYear, onSave }: Props) {
       await onSave(updated)
       setState('saved')
     } catch {
+      setErrorMessage("Couldn't save — check your connection and try again.")
       setState('error')
     }
   }
@@ -69,7 +104,7 @@ export function PayslipSection({ taxYear, onSave }: Props) {
     <div className="bg-surface border border-white/[0.06] rounded-[10px] p-5">
       <h2 className="font-serif text-base mb-1">Payslip figures</h2>
       <p className="text-text-2 text-xs mb-4">
-        Correcting figures here for {latest.payslip.employerName}, period {latest.payslip.taxPeriod}. These drive
+        Correcting figures here for {target.payslip.employerName}, period {target.payslip.taxPeriod}. These drive
         the Dashboard, Income and the year-end projection, so fix anything the AI extraction got wrong.
       </p>
       <div className="space-y-4">
@@ -180,7 +215,7 @@ export function PayslipSection({ taxYear, onSave }: Props) {
         )}
         {state === 'error' && (
           <span className="flex items-center gap-1.5 text-red text-xs">
-            <TriangleAlert size={14} /> Couldn't save — check your connection and try again.
+            <TriangleAlert size={14} /> {errorMessage}
           </span>
         )}
       </div>
