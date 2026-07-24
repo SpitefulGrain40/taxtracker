@@ -15,12 +15,13 @@ export function AccountScreen() {
   const { taxYear, error: taxYearError, saveTaxYear } = useTaxYear(profileId)
   const { events, loading: eventsLoading, error: eventsError, saveEvents } = useFutureEvents(profileId)
 
-  // Gate on the FIRST load only. Every successful save triggers a refetch, which
-  // flips the hooks' `loading` back to true; unmounting the sections at that
-  // point would throw away unsaved edits held in the other sections' local state
-  // (typed payslip corrections, added future-income events) and would also hide
-  // the green "Saved" confirmation. Once data has arrived the sections stay
-  // mounted through every subsequent refetch.
+  // Gate the sections on the FIRST load only, never on a refetch. Saves now store
+  // the new sha directly (no post-save refetch), but a manual refetch() still
+  // flips the hooks' `loading` back to true; unmounting the sections at that point
+  // would throw away unsaved edits held in the other sections' local state (typed
+  // payslip corrections, added future-income events) and would also hide the green
+  // "Saved" confirmation. Once data has arrived the sections stay mounted through
+  // any later refetch.
   //
   // `events` defaults to [] so it can't itself signal "loaded"; latch it once
   // instead. `taxYear` and `profile` are null until loaded, so they gate directly.

@@ -94,9 +94,9 @@ export function SchemesSection({ profile, onSave }: Props) {
         return
       }
 
-      // Currency drives both the FX conversion and the symbol shown on the
-      // Shares screen, which falls back to EUR when it's blank — pricing a USD
-      // holding at the EUR rate. Reject it rather than guess.
+      // Currency drives both the FX conversion and the value shown on the Shares
+      // screen, which falls back to GBP (the reference currency) when it's blank —
+      // mispricing a USD/EUR holding as if it were GBP. Reject it rather than guess.
       const currency = row.currency.trim()
       if (!currency) {
         setErrorMessage(`${employerName} needs a currency — the code the shares are priced in, e.g. EUR or USD.`)

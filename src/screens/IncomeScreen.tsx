@@ -48,7 +48,7 @@ export function IncomeScreen() {
         <h1 className="font-serif text-[28px] tracking-[-0.03em]">Where your income comes from</h1>
         <span className="font-mono text-xs text-text-2">
           {getTaxYearLabel(key)}
-          {period === 'projected' ? ' · projected year-end' : period === 'month' ? ' · this month' : ' · year to date'}
+          {period === 'projected' ? ' · projected year-end' : ' · year to date'}
         </span>
       </div>
       <div className="flex items-center justify-between mb-4">

@@ -187,7 +187,7 @@ export function SharesScreen() {
     <div>
       <div className="flex items-baseline gap-4 mb-6 pb-5 border-b border-white/[0.06]">
         <h1 className="font-serif text-[28px] tracking-[-0.03em]">Share Schemes</h1>
-        {scheme && <span className="font-mono text-xs text-text-2">{scheme.employerName} · {scheme.currency}</span>}
+        {scheme && <span className="font-mono text-xs text-text-2">{(pricingScheme ?? scheme).employerName} · {(pricingScheme ?? scheme).currency}</span>}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
