@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { AlertCircle, RefreshCw, TrendingUp, Settings2 } from 'lucide-react'
 import { LotTable } from '../components/shares/LotTable'
 import { SellCalculator } from '../components/shares/SellCalculator'
+import { AddLotForm } from '../components/shares/AddLotForm'
 import { UploadZone } from '../components/documents/UploadZone'
 import { StatCard } from '../components/ui/StatCard'
 import { AlertStrip } from '../components/ui/AlertStrip'
@@ -162,6 +163,21 @@ export function SharesScreen() {
     }
   }
 
+  // Appends a single manually-entered lot and persists it, mirroring handleImport.
+  // Dev-seed mode has no real PAT/repo, so this naturally refuses to write there —
+  // AddLotForm surfaces the thrown error as its own error state.
+  const handleAddLot = async (lot: ShareLot) => {
+    if (isDevSeedActive()) throw new Error('Dev-seed mode is a read-only preview — connect a real data repo in Settings to save lots.')
+    const pat = storage.getGithubPat()
+    const repo = localStorage.getItem('tt_data_repo')
+    if (!pat || !repo) throw new Error('Not configured — add your GitHub PAT and data repo in Settings before adding a lot.')
+    const merged = [...lots, lot]
+    const client = getDataClient(pat, repo)
+    await writeShareLots(client, profileId, merged, sha)
+    const res = await readShareLots(client, profileId)
+    setLots(res?.data ?? merged); setSha(res?.sha)
+  }
+
   return (
     <div>
       <div className="flex items-baseline gap-4 mb-6 pb-5 border-b border-white/[0.06]">
@@ -316,6 +332,9 @@ export function SharesScreen() {
             {state !== 'importing' && (
               <UploadZone label="Import portfolio export (.xlsx)" hint="From your broker — Fidelity, SAP, etc." onFile={handleImport} />
             )}
+          </div>
+          <div className="p-5 border-t border-white/[0.06]">
+            <AddLotForm schemes={profile?.schemes ?? []} onAdd={handleAddLot} />
           </div>
         </div>
 
