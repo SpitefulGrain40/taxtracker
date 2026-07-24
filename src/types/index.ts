@@ -109,6 +109,7 @@ export interface ShareLot {
   quantity: number
   costBasisGBP: number      // for RSU: market value at vest; for ESPP: purchase price
   incomeTaxPaidGBP?: number // income tax paid via PAYE on this lot (RSU vest, ESPP discount)
+  taxableIncomeGBP?: number  // income realised at acquisition (ESPP discount / RSU vest value); taxed via PAYE, recorded for CGT basis + SA reference
   disposalDate?: string
   disposalPriceGBP?: number
   disposalProceedsGBP?: number
