@@ -3,7 +3,8 @@ import { Check, Loader2, Plus, TriangleAlert } from 'lucide-react'
 import { JargonTip } from '../ui/JargonTip'
 import { buildManualLot } from '../../lib/lotBuilder'
 import { parseMoney } from '../../lib/money'
-import type { SchemeType, ShareLot, ShareSchemeConfig } from '../../types'
+import { SCHEME_TYPE_LABELS } from '../../lib/schemeLabels'
+import type { ShareLot, ShareSchemeConfig } from '../../types'
 
 interface Props {
   schemes: ShareSchemeConfig[]
@@ -11,15 +12,6 @@ interface Props {
 }
 
 type AddState = 'idle' | 'adding' | 'added' | 'error'
-
-const SCHEME_TYPE_LABELS: Record<SchemeType, string> = {
-  'espp-match': 'ESPP with employer match',
-  'espp-discounted': 'ESPP at a discount',
-  rsu: 'RSU (free shares that vest over time)',
-  csop: 'CSOP (Company Share Option Plan)',
-  emi: 'EMI (Enterprise Management Incentive)',
-  saye: 'SAYE / Sharesave',
-}
 
 const inputClass =
   'w-full bg-bg border border-white/10 rounded-lg px-3 py-2.5 text-sm text-text-1 focus:outline-none focus:border-accent/50'
@@ -164,7 +156,7 @@ export function AddLotForm({ schemes, onAdd }: Props) {
             type="date"
             className={inputClass}
             value={acquisitionDate}
-            onChange={e => setAcquisitionDate(e.target.value)}
+            onChange={e => { setAcquisitionDate(e.target.value); setState('idle'); setErrorMsg('') }}
           />
         </div>
         <div>
@@ -174,7 +166,7 @@ export function AddLotForm({ schemes, onAdd }: Props) {
             inputMode="decimal"
             className={numericInputClass}
             value={quantityStr}
-            onChange={e => setQuantityStr(e.target.value)}
+            onChange={e => { setQuantityStr(e.target.value); setState('idle'); setErrorMsg('') }}
             placeholder="100"
           />
         </div>
@@ -188,7 +180,7 @@ export function AddLotForm({ schemes, onAdd }: Props) {
             inputMode="decimal"
             className={numericInputClass}
             value={priceStr}
-            onChange={e => setPriceStr(e.target.value)}
+            onChange={e => { setPriceStr(e.target.value); setState('idle'); setErrorMsg('') }}
             placeholder="0.00"
           />
         </div>
@@ -205,7 +197,7 @@ export function AddLotForm({ schemes, onAdd }: Props) {
               inputMode="decimal"
               className={numericInputClass}
               value={fxStr}
-              onChange={e => setFxStr(e.target.value)}
+              onChange={e => { setFxStr(e.target.value); setState('idle'); setErrorMsg('') }}
               placeholder="1.00"
             />
           </div>

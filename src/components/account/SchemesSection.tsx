@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Check, Plus, Trash2, TriangleAlert } from 'lucide-react'
 import { JargonTip } from '../ui/JargonTip'
 import { fractionToPercent, percentToFraction } from '../../lib/schemeEdit'
+import { SCHEME_TYPE_LABELS } from '../../lib/schemeLabels'
 import type { Profile, SchemeType, ShareSchemeConfig } from '../../types'
 
 interface Props {
@@ -23,15 +24,6 @@ interface SchemeRow {
   exchange: string
   broker: string
   active: boolean
-}
-
-const SCHEME_TYPE_LABELS: Record<SchemeType, string> = {
-  'espp-match': 'ESPP with employer match',
-  'espp-discounted': 'ESPP at a discount',
-  rsu: 'RSU (free shares that vest over time)',
-  csop: 'CSOP (Company Share Option Plan)',
-  emi: 'EMI (Enterprise Management Incentive)',
-  saye: 'SAYE / Sharesave',
 }
 
 const SCHEME_TYPES = Object.keys(SCHEME_TYPE_LABELS) as SchemeType[]
