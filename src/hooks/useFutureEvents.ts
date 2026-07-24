@@ -37,9 +37,9 @@ export function useFutureEvents(profileId: ProfileId): UseFutureEventsResult {
     const repo = localStorage.getItem('tt_data_repo')
     if (!pat || !repo) throw new Error('Not configured')
     const client = getDataClient(pat, repo)
-    await writeFutureEvents(client, profileId, updated, sha ?? undefined)
+    const newSha = await writeFutureEvents(client, profileId, updated, sha ?? undefined)
     setEvents(updated)
-    setTick(t => t + 1)
+    setSha(newSha ?? null)
   }, [profileId, sha])
 
   const refetch = useCallback(() => setTick(t => t + 1), [])

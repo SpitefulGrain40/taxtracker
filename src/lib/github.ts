@@ -32,9 +32,9 @@ export class GitHubDataClient {
     }
   }
 
-  async writeFile<T>(path: string, data: T, sha?: string): Promise<void> {
+  async writeFile<T>(path: string, data: T, sha?: string): Promise<string | undefined> {
     const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))))
-    await this.octokit.repos.createOrUpdateFileContents({
+    const res = await this.octokit.repos.createOrUpdateFileContents({
       owner: this.owner,
       repo: this.repo,
       path,
@@ -42,6 +42,7 @@ export class GitHubDataClient {
       content,
       ...(sha ? { sha } : {}),
     })
+    return res.data?.content?.sha
   }
 }
 

@@ -49,9 +49,9 @@ export function useTaxYear(profileId: ProfileId, year?: TaxYearKey): UseTaxYearR
     const repo = localStorage.getItem('tt_data_repo')
     if (!pat || !repo) throw new Error('Not configured')
     const client = getDataClient(pat, repo)
-    await writeTaxYear(client, profileId, key, updated, sha ?? undefined)
+    const newSha = await writeTaxYear(client, profileId, key, updated, sha ?? undefined)
     setTaxYear(updated)
-    setTick(t => t + 1)
+    setSha(newSha ?? null)
   }, [profileId, key, sha])
 
   const refetch = useCallback(() => setTick(t => t + 1), [])

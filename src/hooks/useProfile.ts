@@ -47,9 +47,9 @@ export function useProfile(profileId: ProfileId): UseProfileResult {
     const repo = localStorage.getItem('tt_data_repo')
     if (!pat || !repo) throw new Error('Not configured')
     const client = getDataClient(pat, repo)
-    await writeProfile(client, profileId, updated, sha ?? undefined)
+    const newSha = await writeProfile(client, profileId, updated, sha ?? undefined)
     setProfile(updated)
-    setTick(t => t + 1)
+    setSha(newSha ?? null)
   }, [profileId, sha])
 
   const refetch = useCallback(() => setTick(t => t + 1), [])

@@ -46,6 +46,13 @@ describe('writeProfile', () => {
     await writeProfile(mockClient as never, 'mike', profile, 'sha123')
     expect(mockClient.writeFile).toHaveBeenCalledWith('data/mike/profile.json', profile, 'sha123')
   })
+
+  it('resolves the new sha returned by the client', async () => {
+    mockClient.writeFile.mockResolvedValue('newsha')
+    const profile = { id: 'mike' as const, firstName: 'Mike', niNumber: '', taxCode: '', pinHash: '', pinSalt: '', githubPat: '', schemes: [], otherIncomeSources: [] as [] }
+    const result = await writeProfile(mockClient as never, 'mike', profile, 'sha123')
+    expect(result).toBe('newsha')
+  })
 })
 
 const fePathClient = { readFile: vi.fn(), writeFile: vi.fn() }
