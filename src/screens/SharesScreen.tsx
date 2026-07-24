@@ -21,8 +21,6 @@ import { fetchLivePrice, type LivePrice } from '../lib/priceProxy'
 import { isDevSeedActive, seedShareLots } from '../lib/devSeed'
 import type { ShareLot } from '../types'
 
-const DEFAULT_SYMBOL = 'SAP.DE'
-const DEFAULT_NATIVE_CCY = 'EUR'
 const REFERENCE_CCY = 'GBP'
 // Built-in price proxy (Cloudflare Worker) so live prices work out of the box on
 // every device without manual setup. Not a secret — it's a public endpoint with
@@ -56,7 +54,13 @@ export function SharesScreen() {
   const [priceState, setPriceState] = useState<'idle' | 'loading' | 'ok' | 'unavailable'>('idle')
   const [showPriceSettings, setShowPriceSettings] = useState(false)
   const [proxyUrl, setProxyUrl] = useState(storage.getPriceProxyUrl() || DEFAULT_PROXY_URL)
-  const [symbol, setSymbol] = useState(storage.getPriceSymbol(profileId) ?? DEFAULT_SYMBOL)
+  const [symbol, setSymbol] = useState(storage.getPriceSymbol(profileId) ?? '')
+
+  // Scheme that drives live pricing: the first active scheme with a ticker,
+  // else the first scheme with a ticker at all, else none. Never hardcode a
+  // specific employer's scheme here — jobs change, schemes change.
+  const pricingScheme = profile?.schemes.find(s => s.active && s.ticker)
+    ?? profile?.schemes.find(s => s.ticker)
 
   // Load lots from data repo
   useEffect(() => {
@@ -74,9 +78,9 @@ export function SharesScreen() {
   useEffect(() => {
     if (lots === null) return
     const url = storage.getPriceProxyUrl() || DEFAULT_PROXY_URL
-    const sym = storage.getPriceSymbol(profileId) || DEFAULT_SYMBOL
+    const sym = pricingScheme?.ticker ?? storage.getPriceSymbol(profileId)
     if (!url || !sym) { setPriceState('idle'); return }
-    const from = profile?.schemes[0]?.currency || DEFAULT_NATIVE_CCY
+    const from = pricingScheme?.currency ?? REFERENCE_CCY
     let cancelled = false
     setPriceState('loading')
     fetchLivePrice(url, sym, { from, to: REFERENCE_CCY })
@@ -87,13 +91,13 @@ export function SharesScreen() {
       })
       .catch(() => { if (!cancelled) { setLivePrice(null); setPriceState('unavailable') } })
     return () => { cancelled = true }
-  }, [lots, profileId, profile])
+  }, [lots, profileId, profile, pricingScheme])
 
   const refreshPrice = () => {
     const url = storage.getPriceProxyUrl() || DEFAULT_PROXY_URL
-    const sym = storage.getPriceSymbol(profileId) || DEFAULT_SYMBOL
+    const sym = pricingScheme?.ticker ?? storage.getPriceSymbol(profileId)
     if (!url || !sym) { setPriceState('idle'); return }
-    const from = profile?.schemes[0]?.currency || DEFAULT_NATIVE_CCY
+    const from = pricingScheme?.currency ?? REFERENCE_CCY
     setPriceState('loading')
     fetchLivePrice(url, sym, { from, to: REFERENCE_CCY })
       .then(res => {
@@ -105,7 +109,7 @@ export function SharesScreen() {
 
   const savePriceSettings = () => {
     const trimmedUrl = proxyUrl.trim()
-    const trimmedSymbol = (symbol.trim() || DEFAULT_SYMBOL).toUpperCase()
+    const trimmedSymbol = symbol.trim().toUpperCase()
     storage.setPriceProxyUrl(trimmedUrl)
     storage.setPriceSymbol(profileId, trimmedSymbol)
     setSymbol(trimmedSymbol)
@@ -117,8 +121,9 @@ export function SharesScreen() {
 
   const pool = section104Pool(lots)
   const scheme = profile?.schemes[0]
-  const nativeCcy = scheme?.currency || DEFAULT_NATIVE_CCY
+  const nativeCcy = pricingScheme?.currency ?? REFERENCE_CCY
   const sym = currencySymbol(nativeCcy)
+  const hasTicker = Boolean(pricingScheme?.ticker ?? storage.getPriceSymbol(profileId))
   const lastLotPrice = lots.length ? (lots[lots.length - 1].acquisitionPriceGBP) : 0
   // Effective (native) price: manual override → live (previous close) → last-lot.
   // The live price is in the scheme's native currency (EUR for Mike's SAP).
@@ -223,7 +228,7 @@ export function SharesScreen() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {hasProxy && (
+            {hasProxy && hasTicker && (
               <button
                 onClick={refreshPrice}
                 disabled={priceState === 'loading'}
@@ -243,13 +248,17 @@ export function SharesScreen() {
           </div>
         </div>
 
-        {!hasProxy && (
+        {!hasTicker ? (
+          <p className="text-[12px] text-text-2 mt-3">
+            Add a ticker to your share scheme (Account → Schemes) to see live prices.
+          </p>
+        ) : !hasProxy && (
           <p className="text-[12px] text-text-2 mt-3">
             Add a price source to see live values — see <span className="font-mono text-text-1">price-proxy/README.md</span>. Until then, values are estimated from your last purchase.
           </p>
         )}
 
-        {priceState === 'unavailable' && hasProxy && (
+        {priceState === 'unavailable' && hasProxy && hasTicker && (
           <p className="text-[12px] text-yellow mt-3">
             Couldn't reach the live price source. Showing an estimated price — you can set one manually below.
           </p>
@@ -298,7 +307,7 @@ export function SharesScreen() {
               <input
                 type="text"
                 value={symbol}
-                placeholder={DEFAULT_SYMBOL}
+                placeholder="e.g. SAP.DE, AAPL"
                 onChange={e => setSymbol(e.target.value)}
                 className="w-full bg-bg border border-white/10 rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:border-accent/50"
               />
