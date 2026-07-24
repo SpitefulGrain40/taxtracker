@@ -22,6 +22,7 @@ interface SchemeRow {
   discountRatePercent: string
   currency: string
   exchange: string
+  ticker: string
   broker: string
   active: boolean
 }
@@ -41,6 +42,7 @@ function rowFromScheme(scheme: ShareSchemeConfig): SchemeRow {
     discountRatePercent: fractionToPercent(scheme.discountRate),
     currency: scheme.currency,
     exchange: scheme.exchange,
+    ticker: scheme.ticker ?? '',
     broker: scheme.broker,
     active: scheme.active,
   }
@@ -54,6 +56,7 @@ function newRow(): SchemeRow {
     discountRatePercent: '',
     currency: '',
     exchange: '',
+    ticker: '',
     broker: '',
     active: true,
   }
@@ -109,6 +112,11 @@ export function SchemesSection({ profile, onSave }: Props) {
         exchange: row.exchange.trim(),
         broker: row.broker.trim(),
         active: row.active,
+      }
+
+      const tickerTrimmed = row.ticker.trim()
+      if (tickerTrimmed !== '') {
+        scheme.ticker = tickerTrimmed
       }
 
       if (row.schemeType === 'espp-discounted') {
@@ -223,7 +231,7 @@ export function SchemesSection({ profile, onSave }: Props) {
                   </div>
                 )}
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-3">
                   <div>
                     <label className={labelClass}>Currency</label>
                     <input
@@ -241,6 +249,19 @@ export function SchemesSection({ profile, onSave }: Props) {
                       onChange={e => updateRow(row.id, { exchange: e.target.value })}
                       placeholder="XETRA"
                     />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Ticker</label>
+                    <input
+                      className={inputClass}
+                      value={row.ticker}
+                      onChange={e => updateRow(row.id, { ticker: e.target.value })}
+                      placeholder="e.g. SAP.DE or AAPL"
+                    />
+                    <p className="text-text-2 text-xs mt-1.5">
+                      The market symbol for live prices, e.g. SAP.DE or AAPL — leave blank if you don't want live
+                      pricing.
+                    </p>
                   </div>
                   <div>
                     <label className={labelClass}>Broker</label>

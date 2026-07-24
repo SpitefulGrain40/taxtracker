@@ -93,6 +93,7 @@ export interface ShareSchemeConfig {
   discountRate?: number     // for espp-discounted, e.g. 0.15
   currency: string          // e.g. "USD"
   exchange: string          // e.g. "NYSE"
+  ticker?: string           // market symbol used for live pricing, e.g. "SAP.DE" or "AAPL"
   broker: string
   active: boolean
 }
