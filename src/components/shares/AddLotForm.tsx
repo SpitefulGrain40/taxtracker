@@ -39,13 +39,14 @@ export function AddLotForm({ schemes, onAdd }: Props) {
 
   const isGbp = scheme?.currency === 'GBP'
   const missingDiscount = scheme?.schemeType === 'espp-discounted' && scheme.discountRate == null
+  const unsupportedSchemeType = scheme != null && !['espp-discounted', 'espp-match', 'rsu'].includes(scheme.schemeType)
 
   const quantity = parseMoney(quantityStr)
   const price = parseMoney(priceStr)
   const fx = isGbp ? 1 : parseMoney(fxStr)
 
   const preview = useMemo(() => {
-    if (!scheme || missingDiscount) return null
+    if (!scheme || missingDiscount || unsupportedSchemeType) return null
     if (quantity == null || quantity <= 0) return null
     if (price == null || price <= 0) return null
     if (fx == null || fx <= 0) return null
@@ -60,7 +61,7 @@ export function AddLotForm({ schemes, onAdd }: Props) {
       marketPricePerShare: price,
       fxToGBP: fx,
     })
-  }, [scheme, missingDiscount, quantity, price, fx, acquisitionDate])
+  }, [scheme, missingDiscount, unsupportedSchemeType, quantity, price, fx, acquisitionDate])
 
   const gbp = (n: number) => `£${n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
@@ -76,6 +77,11 @@ export function AddLotForm({ schemes, onAdd }: Props) {
     if (!scheme) { setErrorMsg('Choose a scheme.'); setState('error'); return }
     if (missingDiscount) {
       setErrorMsg(`Set the discount % for ${scheme.employerName} in Account → Share schemes before adding a discounted-ESPP lot.`)
+      setState('error')
+      return
+    }
+    if (unsupportedSchemeType) {
+      setErrorMsg(`Manual entry for CSOP, EMI, and SAYE schemes isn't supported yet. Add the lot once the automatic import for this scheme is available.`)
       setState('error')
       return
     }
@@ -145,6 +151,17 @@ export function AddLotForm({ schemes, onAdd }: Props) {
           <span>
             Set the discount % for {scheme?.employerName} in Account → Share schemes before adding a lot — we won't
             guess at 0%.
+          </span>
+        </div>
+      )}
+
+      {unsupportedSchemeType && (
+        <div className="flex items-start gap-2 text-xs text-yellow bg-[rgba(200,154,58,0.10)] border border-[rgba(200,154,58,0.22)] rounded-lg p-3">
+          <TriangleAlert size={14} className="mt-0.5 flex-shrink-0" />
+          <span>
+            Manual entry for CSOP, EMI, and SAYE schemes isn't supported yet — we can't calculate the CGT cost basis
+            correctly for these options without your exercise price. Add the lot once the automatic import for this
+            scheme is available.
           </span>
         </div>
       )}
@@ -238,7 +255,7 @@ export function AddLotForm({ schemes, onAdd }: Props) {
       <div className="flex items-center gap-3">
         <button
           onClick={handleAdd}
-          disabled={state === 'adding' || missingDiscount}
+          disabled={state === 'adding' || missingDiscount || unsupportedSchemeType}
           className="flex items-center gap-1.5 bg-accent text-bg font-semibold py-2 px-4 rounded-lg text-sm disabled:opacity-40 hover:opacity-90 transition-opacity"
         >
           {state === 'adding' ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}

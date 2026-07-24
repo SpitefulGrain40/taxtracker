@@ -127,4 +127,16 @@ describe('AddLotForm', () => {
     // Taxable income is just the discount.
     expect(lot.taxableIncomeGBP).toBeCloseTo(2370, 5)
   })
+
+  it('blocks manual entry for an unsupported option scheme (CSOP/EMI/SAYE) rather than miscomputing CGT', () => {
+    const scheme = { id: 'c1', employerName: 'Acme', schemeType: 'csop' as const, currency: 'GBP', exchange: 'LSE', broker: 'X', active: true }
+    const onAdd = vi.fn()
+    render(<AddLotForm schemes={[scheme]} onAdd={onAdd} />)
+    // the unsupported-scheme guidance is shown
+    expect(screen.getByText(/isn't supported yet|not supported/i)).toBeInTheDocument()
+    // and adding is blocked
+    const addBtn = screen.getByRole('button', { name: /^add lot$/i })
+    expect(addBtn).toBeDisabled()
+    expect(onAdd).not.toHaveBeenCalled()
+  })
 })
