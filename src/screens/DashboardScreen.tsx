@@ -100,8 +100,8 @@ export function DashboardScreen() {
             <span className="font-mono text-[10px] uppercase tracking-wide text-yellow bg-yellow/10 px-2 py-0.5 rounded">Estimate</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <StatCard label="Projected income" value={gbp(projection.projectedGross)} variant="default" />
-            <StatCard label="Projected tax + NI" value={gbp(projection.projectedTaxDue)} variant="yellow" />
+            <StatCard label="Projected income" value={gbp(projection.projectedGross)} variant="yellow" />
+            <StatCard label="Projected tax + NI" value={gbp(projection.projectedTaxDue)} variant="yellow" note={<JargonTip term="NI" explanation="National Insurance — a separate tax on your earnings that funds the state pension and some benefits." />} />
             <StatCard
               label={projection.shortfall >= 0 ? 'Set aside for April' : 'Likely refund'}
               value={gbp(Math.abs(projection.shortfall))}

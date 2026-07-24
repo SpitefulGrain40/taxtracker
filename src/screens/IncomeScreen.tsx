@@ -46,7 +46,10 @@ export function IncomeScreen() {
     <div>
       <div className="flex items-baseline gap-4 mb-6 pb-5 border-b border-white/[0.06]">
         <h1 className="font-serif text-[28px] tracking-[-0.03em]">Where your income comes from</h1>
-        <span className="font-mono text-xs text-text-2">{getTaxYearLabel(key)} · year to date</span>
+        <span className="font-mono text-xs text-text-2">
+          {getTaxYearLabel(key)}
+          {period === 'projected' ? ' · projected year-end' : period === 'month' ? ' · this month' : ' · year to date'}
+        </span>
       </div>
       <div className="flex items-center justify-between mb-4">
         <PeriodToggle value={period} onChange={setPeriod} />
@@ -58,7 +61,7 @@ export function IncomeScreen() {
         <div className="bg-surface border border-white/[0.06] rounded-[10px] overflow-hidden">
           <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
             <h2 className="font-serif text-base">Income sources</h2>
-            <span className="font-mono text-[10px] bg-accent-soft text-accent px-2 py-0.5 rounded">YTD</span>
+            <span className="font-mono text-[10px] bg-accent-soft text-accent px-2 py-0.5 rounded">{period === 'projected' ? 'PROJECTED' : 'YTD'}</span>
           </div>
           <IncomeRow name="Salary & car allowance" detail={`${taxYear.employment[0]?.employerName ?? 'Employer'} · ${allPayslips.length} payslip${allPayslips.length === 1 ? '' : 's'}`} source="PAYE" amount={s.employmentIncome} />
           {salSac !== 0 && (
@@ -81,7 +84,14 @@ export function IncomeScreen() {
             </div>
           )}
         </div>
-        <ForecastSlider baseIncome={projection.available ? projection.projectedGross : s.employmentIncome} />
+        <div>
+          <ForecastSlider baseIncome={projection.available ? projection.projectedGross : s.employmentIncome} />
+          {projection.available && (
+            <p className="text-text-2 text-xs mt-2">
+              This "what if" starts from your projected full-year income — an estimate, not a confirmed figure.
+            </p>
+          )}
+        </div>
       </div>
       <p className="text-text-2 text-xs mt-4">
         All figures are <JargonTip term="year to date" explanation="The running total since the tax year started on 6 April. Your latest payslip shows this." /> from your uploaded payslips.
