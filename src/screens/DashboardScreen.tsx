@@ -35,7 +35,6 @@ export function DashboardScreen() {
     events,
     baseAnnualSalary: profile?.baseAnnualSalary ?? null,
     taxCode: s.taxCode,
-    today: new Date(),
     rates: R,
   })
   const band = marginalBand(s.employmentIncome + s.dividendIncome + s.savingsIncome + s.benefitsInKind, R)

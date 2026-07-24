@@ -33,7 +33,6 @@ export function IncomeScreen() {
     events,
     baseAnnualSalary: profile?.baseAnnualSalary ?? null,
     taxCode: s.taxCode,
-    today: new Date(),
     rates: R,
   })
   const showProjected = period === 'projected' && projection.available

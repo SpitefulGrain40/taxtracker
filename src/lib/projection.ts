@@ -12,7 +12,6 @@ export interface ProjectionInput {
   events: FutureIncomeEvent[]
   baseAnnualSalary: number | null
   taxCode: string | null
-  today: Date
   rates: TaxRates
 }
 

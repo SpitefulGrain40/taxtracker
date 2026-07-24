@@ -24,7 +24,7 @@ function taxYear(payslips: Payslip[], over: Partial<TaxYear> = {}): TaxYear {
 
 const baseInput = (over: Partial<ProjectionInput> = {}): ProjectionInput => ({
   taxYear: taxYear([payslip()]), events: [], baseAnnualSalary: null, taxCode: '1257L',
-  today: new Date('2025-09-30'), rates: CURRENT_RATES, ...over,
+  rates: CURRENT_RATES, ...over,
 })
 
 describe('projectTaxYear', () => {
