@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { ClipboardCheck, UserCog, LineChart, MessageSquare, Users, Lock, X } from 'lucide-react'
 
 interface Props {
@@ -11,6 +12,22 @@ interface Props {
 }
 
 export function MoreDrawer({ open, onClose, onNavigate, onSubmitFeedback, onSwitchProfile, onLock, profileName }: Props) {
+  useEffect(() => {
+    if (!open) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [open, onClose])
+
   if (!open) return null
 
   const items = [
@@ -25,7 +42,12 @@ export function MoreDrawer({ open, onClose, onNavigate, onSubmitFeedback, onSwit
   return (
     <div className="fixed inset-0 z-[60]">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} aria-hidden />
-      <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-surface border-l border-white/[0.06] flex flex-col">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="More menu"
+        className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-surface border-l border-white/[0.06] flex flex-col"
+      >
         <div className="flex items-center justify-between px-5 h-14 border-b border-white/[0.06]">
           <span className="font-serif text-base">More</span>
           <button onClick={onClose} aria-label="Close" className="text-text-2 hover:text-text-1 transition-colors">
