@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, TriangleAlert, Trash2 } from 'lucide-react'
+import { Check, TriangleAlert, Trash2, Pencil } from 'lucide-react'
 import { JargonTip } from '../ui/JargonTip'
 import { parseMoney } from '../../lib/money'
 import { getTaxYearEndDate, getTaxYearLabel, getTaxYearStartDate } from '../../lib/taxYears'
@@ -56,11 +56,34 @@ export function FutureEventsSection({ events, taxYearKey, onSave }: Props) {
   const [amount, setAmount] = useState('')
   const [effectiveDate, setEffectiveDate] = useState('')
   const [addError, setAddError] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   const [state, setState] = useState<SaveState>('idle')
   const [errorMessage, setErrorMessage] = useState('')
 
-  const handleAdd = () => {
+  const resetForm = () => {
+    setLabel('')
+    setAmount('')
+    setEffectiveDate('')
+    setType('bonus')
+    setAddError('')
+    setEditingId(null)
+  }
+
+  const handleEdit = (event: FutureIncomeEvent) => {
+    setType(event.type)
+    setLabel(event.label)
+    setAmount(String(event.amount))
+    setEffectiveDate(event.effectiveDate)
+    setAddError('')
+    setEditingId(event.id)
+  }
+
+  const handleCancelEdit = () => {
+    resetForm()
+  }
+
+  const handleSubmit = () => {
     if (!label.trim()) {
       setAddError('Give this event a label.')
       return
@@ -93,26 +116,33 @@ export function FutureEventsSection({ events, taxYearKey, onSave }: Props) {
       return
     }
 
-    const newEvent: FutureIncomeEvent = {
-      id: crypto.randomUUID(),
-      type,
-      label: label.trim(),
-      amount: parsedAmount,
-      effectiveDate,
-      taxYear: taxYearKey,
-      subjectToNI: true,
+    if (editingId) {
+      setItems(prev =>
+        prev.map(e =>
+          e.id === editingId
+            ? { ...e, type, label: label.trim(), amount: parsedAmount, effectiveDate }
+            : e
+        )
+      )
+    } else {
+      const newEvent: FutureIncomeEvent = {
+        id: crypto.randomUUID(),
+        type,
+        label: label.trim(),
+        amount: parsedAmount,
+        effectiveDate,
+        taxYear: taxYearKey,
+        subjectToNI: true,
+      }
+      setItems(prev => [...prev, newEvent])
     }
-    setItems(prev => [...prev, newEvent])
-    setLabel('')
-    setAmount('')
-    setEffectiveDate('')
-    setType('bonus')
-    setAddError('')
+    resetForm()
     setState('idle')
   }
 
   const handleRemove = (id: string) => {
     setItems(prev => prev.filter(e => e.id !== id))
+    if (editingId === id) resetForm()
     setState('idle')
   }
 
@@ -163,6 +193,13 @@ export function FutureEventsSection({ events, taxYearKey, onSave }: Props) {
               <div className="flex items-center gap-3 shrink-0">
                 <span className="font-mono text-sm text-text-1">{formatMoney(event.amount)}</span>
                 <button
+                  onClick={() => handleEdit(event)}
+                  aria-label={`Edit ${event.label}`}
+                  className="text-text-2 hover:text-accent transition-colors"
+                >
+                  <Pencil size={16} />
+                </button>
+                <button
                   onClick={() => handleRemove(event.id)}
                   aria-label={`Remove ${event.label}`}
                   className="text-text-2 hover:text-red transition-colors"
@@ -176,7 +213,9 @@ export function FutureEventsSection({ events, taxYearKey, onSave }: Props) {
       )}
 
       <div className="pt-2 border-t border-white/[0.06]">
-        <p className="text-[11px] uppercase tracking-[.06em] text-text-2 mb-3">Add an event</p>
+        <p className="text-[11px] uppercase tracking-[.06em] text-text-2 mb-3">
+          {editingId ? 'Edit event' : 'Add an event'}
+        </p>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -228,11 +267,19 @@ export function FutureEventsSection({ events, taxYearKey, onSave }: Props) {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={handleAdd}
+              onClick={handleSubmit}
               className="bg-white/[0.06] text-text-1 font-semibold py-2 px-4 rounded-lg text-sm hover:bg-white/[0.1] transition-colors"
             >
-              Add
+              {editingId ? 'Save changes' : 'Add'}
             </button>
+            {editingId && (
+              <button
+                onClick={handleCancelEdit}
+                className="text-text-2 font-semibold py-2 px-4 rounded-lg text-sm hover:text-text-1 transition-colors"
+              >
+                Cancel
+              </button>
+            )}
             {addError && (
               <span className="flex items-center gap-1.5 text-red text-xs">
                 <TriangleAlert size={14} /> {addError}
