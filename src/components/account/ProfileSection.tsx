@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Check, TriangleAlert } from 'lucide-react'
 import { JargonTip } from '../ui/JargonTip'
 import { buildUpdatedProfile } from '../../lib/profileEdit'
+import { parseMoney } from '../../lib/money'
 import type { Profile } from '../../types'
 
 interface Props {
@@ -19,21 +20,36 @@ export function ProfileSection({ profile, onSave }: Props) {
     profile.baseAnnualSalary != null ? String(profile.baseAnnualSalary) : ''
   )
   const [state, setState] = useState<SaveState>('idle')
+  const [errorMessage, setErrorMessage] = useState('')
 
   const handleSave = async () => {
+    // An unparseable salary must be rejected, never dropped: buildUpdatedProfile
+    // DELETES baseAnnualSalary when given null, so coercing "1.2.3" to null would
+    // silently unset the user's stated salary behind a green "Saved".
+    let salary: number | null = null
+    if (baseAnnualSalary.trim() !== '') {
+      salary = parseMoney(baseAnnualSalary)
+      if (salary === null) {
+        setErrorMessage("Check the salary — it isn't a valid number.")
+        setState('error')
+        return
+      }
+    }
+
     setState('saving')
-    const salary = baseAnnualSalary ? Number(baseAnnualSalary) : null
+    setErrorMessage('')
     const updated = buildUpdatedProfile(profile, {
       firstName,
       niNumber,
       taxCode,
-      baseAnnualSalary: salary != null && !Number.isNaN(salary) ? salary : null,
+      baseAnnualSalary: salary,
     })
 
     try {
       await onSave(updated)
       setState('saved')
     } catch {
+      setErrorMessage("Couldn't save — check your connection and try again.")
       setState('error')
     }
   }
@@ -47,7 +63,7 @@ export function ProfileSection({ profile, onSave }: Props) {
           <input
             className="w-full bg-surface border border-white/10 rounded-lg px-3 py-2.5 text-sm text-text-1 focus:outline-none focus:border-accent/50"
             value={firstName}
-            onChange={e => setFirstName(e.target.value)}
+            onChange={e => { setFirstName(e.target.value); setState('idle') }}
           />
         </div>
         <div>
@@ -57,7 +73,7 @@ export function ProfileSection({ profile, onSave }: Props) {
           <input
             className="w-full bg-surface border border-white/10 rounded-lg px-3 py-2.5 text-sm text-text-1 font-mono focus:outline-none focus:border-accent/50"
             value={niNumber}
-            onChange={e => setNiNumber(e.target.value)}
+            onChange={e => { setNiNumber(e.target.value); setState('idle') }}
             placeholder="AB 12 34 56 C"
           />
         </div>
@@ -68,7 +84,7 @@ export function ProfileSection({ profile, onSave }: Props) {
           <input
             className="w-full bg-surface border border-white/10 rounded-lg px-3 py-2.5 text-sm text-text-1 font-mono focus:outline-none focus:border-accent/50"
             value={taxCode}
-            onChange={e => setTaxCode(e.target.value)}
+            onChange={e => { setTaxCode(e.target.value); setState('idle') }}
             placeholder="1257L"
           />
         </div>
@@ -78,7 +94,7 @@ export function ProfileSection({ profile, onSave }: Props) {
             inputMode="numeric"
             className="w-full bg-surface border border-white/10 rounded-lg px-3 py-2.5 text-sm text-text-1 font-mono focus:outline-none focus:border-accent/50"
             value={baseAnnualSalary}
-            onChange={e => setBaseAnnualSalary(e.target.value.replace(/[^0-9.]/g, ''))}
+            onChange={e => { setBaseAnnualSalary(e.target.value.replace(/[^0-9.]/g, '')); setState('idle') }}
             placeholder="60000"
           />
           <p className="text-text-2 text-xs mt-1.5">Used to project your income for the rest of the tax year. Leave blank if unknown.</p>
@@ -99,7 +115,7 @@ export function ProfileSection({ profile, onSave }: Props) {
         )}
         {state === 'error' && (
           <span className="flex items-center gap-1.5 text-red text-xs">
-            <TriangleAlert size={14} /> Couldn't save — check your connection and try again.
+            <TriangleAlert size={14} /> {errorMessage}
           </span>
         )}
       </div>

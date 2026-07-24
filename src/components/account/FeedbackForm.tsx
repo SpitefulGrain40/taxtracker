@@ -71,8 +71,16 @@ export function FeedbackForm({ open, onClose, screen }: Props) {
         </div>
 
         {state === 'sent' ? (
-          <div className="flex items-center gap-1.5 text-green text-sm py-4">
-            <Check size={16} /> Thanks — sent
+          <div>
+            <div className="flex items-center gap-1.5 text-green text-sm py-4">
+              <Check size={16} /> Thanks — sent
+            </div>
+            <button
+              onClick={handleClose}
+              className="bg-accent text-bg font-semibold py-2.5 px-5 rounded-lg text-sm hover:opacity-90 transition-opacity"
+            >
+              Done
+            </button>
           </div>
         ) : (
           <>

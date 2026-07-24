@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Check, TriangleAlert, Trash2 } from 'lucide-react'
 import { JargonTip } from '../ui/JargonTip'
 import { parseMoney } from '../../lib/money'
+import { getTaxYearEndDate, getTaxYearLabel, getTaxYearStartDate } from '../../lib/taxYears'
 import type { FutureIncomeEvent, FutureIncomeEventType, TaxYearKey } from '../../types'
 
 interface Props {
@@ -26,11 +27,15 @@ const TYPE_LABELS: Record<FutureIncomeEventType, string> = {
 const formatMoney = (amount: number) =>
   new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(amount)
 
+// Event dates are date-only ISO strings, parsed as UTC midnight. Format in UTC
+// so a browser west of Greenwich doesn't render them a day early.
 const formatDate = (iso: string) => {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return iso
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
 }
+
+const toIsoDay = (d: Date) => d.toISOString().slice(0, 10)
 
 function helperForType(type: FutureIncomeEventType) {
   switch (type) {
@@ -65,8 +70,26 @@ export function FutureEventsSection({ events, taxYearKey, onSave }: Props) {
       setAddError("Check the amount — it isn't a valid number.")
       return
     }
+    // parseMoney treats blank as 0, which is right for payslip fields but wrong
+    // here: a zero pay rise would be projected as £0/year of future pay and
+    // silently wipe out the shortfall warning.
+    if (parsedAmount <= 0) {
+      setAddError("Enter the amount — it can't be blank or zero.")
+      return
+    }
     if (!effectiveDate) {
       setAddError('Pick an effective date.')
+      return
+    }
+    // The event is tagged with `taxYearKey` and projection.ts filters on that tag
+    // alone. A date outside the tagged year would be counted in the wrong year —
+    // an earlier date double-counts against YTD figures that already include it.
+    const startIso = toIsoDay(getTaxYearStartDate(taxYearKey))
+    const endIso = toIsoDay(getTaxYearEndDate(taxYearKey))
+    if (effectiveDate < startIso || effectiveDate > endIso) {
+      setAddError(
+        `The date must fall in the ${getTaxYearLabel(taxYearKey)} tax year — between ${formatDate(startIso)} and ${formatDate(endIso)}.`
+      )
       return
     }
 

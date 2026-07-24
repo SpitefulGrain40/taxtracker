@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ChangeEvent } from 'react'
 import { Check, TriangleAlert } from 'lucide-react'
 import { JargonTip } from '../ui/JargonTip'
 import { Link } from 'react-router-dom'
@@ -68,8 +68,17 @@ export function PayslipSection({ taxYear, onSave }: Props) {
       return
     }
 
+    // Reject rather than clamp: silently turning a typed 13 into 12 would write a
+    // tax period the user never entered into the stored payslip.
+    const period = Number(taxPeriod.trim())
+    if (!/^\d+$/.test(taxPeriod.trim()) || !Number.isInteger(period) || period < 1 || period > 12) {
+      setErrorMessage('Check the tax period — it must be a whole number from 1 to 12.')
+      setState('error')
+      return
+    }
+
     setState('saving')
-    const period = Math.round(Math.min(12, Math.max(1, Number(taxPeriod) || target.payslip.taxPeriod)))
+    setErrorMessage('')
     const updated = applyPayslipEdits(taxYear, target.employmentId, target.payslip.id, {
       ytdGross: parsedYtdGross,
       ytdTaxPaid: parsedYtdTaxPaid,
@@ -92,6 +101,14 @@ export function PayslipSection({ taxYear, onSave }: Props) {
 
   const onlyDigits = (value: string) => value.replace(/[^0-9.]/g, '')
 
+  // Any edit invalidates the previous result, so a green "Saved" tick can't
+  // linger over figures the user has since changed but not saved.
+  const edited = (setter: (value: string) => void, transform: (value: string) => string = v => v) =>
+    (event: ChangeEvent<HTMLInputElement>) => {
+      setter(transform(event.target.value))
+      setState('idle')
+    }
+
   return (
     <div className="bg-surface border border-white/[0.06] rounded-[10px] p-5">
       <h2 className="font-serif text-base mb-1">Payslip figures</h2>
@@ -110,7 +127,7 @@ export function PayslipSection({ taxYear, onSave }: Props) {
               inputMode="numeric"
               className={numericInputClass}
               value={taxPeriod}
-              onChange={e => setTaxPeriod(e.target.value)}
+              onChange={edited(setTaxPeriod)}
             />
           </div>
           <div>
@@ -118,7 +135,7 @@ export function PayslipSection({ taxYear, onSave }: Props) {
             <input
               className={numericInputClass}
               value={taxCode}
-              onChange={e => setTaxCode(e.target.value)}
+              onChange={edited(setTaxCode)}
               placeholder="1257L"
             />
           </div>
@@ -130,7 +147,7 @@ export function PayslipSection({ taxYear, onSave }: Props) {
             inputMode="numeric"
             className={numericInputClass}
             value={basicSalary}
-            onChange={e => setBasicSalary(onlyDigits(e.target.value))}
+            onChange={edited(setBasicSalary, onlyDigits)}
           />
         </div>
 
@@ -141,7 +158,7 @@ export function PayslipSection({ taxYear, onSave }: Props) {
               inputMode="numeric"
               className={numericInputClass}
               value={taxPaid}
-              onChange={e => setTaxPaid(onlyDigits(e.target.value))}
+              onChange={edited(setTaxPaid, onlyDigits)}
             />
           </div>
           <div>
@@ -150,7 +167,7 @@ export function PayslipSection({ taxYear, onSave }: Props) {
               inputMode="numeric"
               className={numericInputClass}
               value={employeeNI}
-              onChange={e => setEmployeeNI(onlyDigits(e.target.value))}
+              onChange={edited(setEmployeeNI, onlyDigits)}
             />
           </div>
         </div>
@@ -166,7 +183,7 @@ export function PayslipSection({ taxYear, onSave }: Props) {
                 inputMode="numeric"
                 className={numericInputClass}
                 value={ytdGross}
-                onChange={e => setYtdGross(onlyDigits(e.target.value))}
+                onChange={edited(setYtdGross, onlyDigits)}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -176,7 +193,7 @@ export function PayslipSection({ taxYear, onSave }: Props) {
                   inputMode="numeric"
                   className={numericInputClass}
                   value={ytdTaxPaid}
-                  onChange={e => setYtdTaxPaid(onlyDigits(e.target.value))}
+                  onChange={edited(setYtdTaxPaid, onlyDigits)}
                 />
               </div>
               <div>
@@ -185,7 +202,7 @@ export function PayslipSection({ taxYear, onSave }: Props) {
                   inputMode="numeric"
                   className={numericInputClass}
                   value={ytdEmployeeNI}
-                  onChange={e => setYtdEmployeeNI(onlyDigits(e.target.value))}
+                  onChange={edited(setYtdEmployeeNI, onlyDigits)}
                 />
               </div>
             </div>

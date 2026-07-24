@@ -99,11 +99,21 @@ export function SchemesSection({ profile, onSave }: Props) {
         return
       }
 
+      // Currency drives both the FX conversion and the symbol shown on the
+      // Shares screen, which falls back to EUR when it's blank — pricing a USD
+      // holding at the EUR rate. Reject it rather than guess.
+      const currency = row.currency.trim()
+      if (!currency) {
+        setErrorMessage(`${employerName} needs a currency — the code the shares are priced in, e.g. EUR or USD.`)
+        setState('error')
+        return
+      }
+
       const scheme: ShareSchemeConfig = {
         id: row.id,
         employerName,
         schemeType: row.schemeType,
-        currency: row.currency.trim(),
+        currency,
         exchange: row.exchange.trim(),
         broker: row.broker.trim(),
         active: row.active,
