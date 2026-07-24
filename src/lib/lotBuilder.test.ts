@@ -46,6 +46,13 @@ describe('buildManualLot', () => {
     expect('taxableIncomeGBP' in lot).toBe(false)
   })
 
+  it('treats a missing discount rate on a discounted ESPP as 0% (no discount income), keeping full market value as the cost basis', () => {
+    const { lot, taxableIncomeGBP } = buildManualLot({ ...base, discountRate: undefined })
+    expect(taxableIncomeGBP).toBe(0)
+    expect('taxableIncomeGBP' in lot).toBe(false)
+    expect(lot.costBasisGBP).toBeCloseTo(15800, 2)
+  })
+
   it('is a no-op FX (rate 1) for a GBP scheme', () => {
     const { lot } = buildManualLot({ ...base, fxToGBP: 1 })
     expect(lot.costBasisGBP).toBeCloseTo(20000, 2)

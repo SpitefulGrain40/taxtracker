@@ -107,7 +107,7 @@ export interface ShareLot {
   acquisitionPriceFX: number        // GBP/original-currency rate at acquisition
   acquisitionPriceGBP: number       // derived: original * fx
   quantity: number
-  costBasisGBP: number      // for RSU: market value at vest; for ESPP: purchase price
+  costBasisGBP: number      // market value at acquisition (RSU vest / ESPP purchase); NOT the discounted price paid
   incomeTaxPaidGBP?: number // income tax paid via PAYE on this lot (RSU vest, ESPP discount)
   taxableIncomeGBP?: number  // income realised at acquisition (ESPP discount / RSU vest value); taxed via PAYE, recorded for CGT basis + SA reference
   disposalDate?: string
