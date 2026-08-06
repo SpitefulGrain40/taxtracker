@@ -61,7 +61,11 @@ export function projectTaxYear(input: ProjectionInput): TaxProjection {
 
   const yearEvents = events.filter(e => e.taxYear === taxYear.key)
   const payRises = yearEvents.filter(e => e.type === 'pay-rise')
-  const oneOffs = yearEvents.filter(e => e.type === 'bonus' || e.type === 'rsu-vest')
+  // Only one-offs that haven't been paid yet: anything on or before the latest
+  // payslip's period is already inside ytdGross, so adding it would double-count.
+  const oneOffs = yearEvents.filter(
+    e => (e.type === 'bonus' || e.type === 'rsu-vest') && getTaxPeriod(new Date(e.effectiveDate)) > m
+  )
 
   // Future employment run-rate, stepping at each pay-rise effective period.
   let futureGross = 0

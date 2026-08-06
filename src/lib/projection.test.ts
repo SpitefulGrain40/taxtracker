@@ -97,6 +97,25 @@ describe('projectTaxYear', () => {
     expect(statedHigher.shortfall).toBeCloseTo(runRate.shortfall, 0)
   })
 
+  it('does not double-count a bonus that has already been paid', () => {
+    // Bonus dated in tax period 5 (August) — before the latest payslip (period 6),
+    // so it is already inside ytdGross and must NOT be added again.
+    const paid: FutureIncomeEvent = { id: 'b', type: 'bonus', label: 'Paid bonus', amount: 8000, effectiveDate: '2025-08-31', taxYear: '2025-26', subjectToNI: true }
+    const withPaid = projectTaxYear(baseInput({ events: [paid] }))
+    const without = projectTaxYear(baseInput())
+    expect(withPaid.projectedGross).toBeCloseTo(without.projectedGross, 2)
+    expect(withPaid.breakdown.items.some(i => i.type === 'bonus')).toBe(false)
+  })
+
+  it('does not project a phantom bonus onto a completed tax year', () => {
+    // A complete year: the final payslip is period 12, so there are no future
+    // months and every logged one-off is already reflected in ytdGross.
+    const complete = taxYear([payslip({ taxPeriod: 12, ytdGross: 60000 })])
+    const bonus: FutureIncomeEvent = { id: 'b', type: 'bonus', label: 'Bonus', amount: 8000, effectiveDate: '2026-03-31', taxYear: '2025-26', subjectToNI: true }
+    const p = projectTaxYear(baseInput({ taxYear: complete, events: [bonus] }))
+    expect(p.projectedGross).toBeCloseTo(60000, 2)
+  })
+
   describe('breakdown', () => {
     it('base-only: a single base item close to projectedGross', () => {
       const p = projectTaxYear(baseInput())
