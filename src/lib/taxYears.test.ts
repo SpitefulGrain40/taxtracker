@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getTaxYearKey, getTaxYearLabel, monthsIntoTaxYear, getCurrentTaxYear, recentTaxYears } from './taxYears'
+import { getTaxYearKey, getTaxYearLabel, monthsIntoTaxYear, getCurrentTaxYear, recentTaxYears, taxPeriodMonthLabel } from './taxYears'
 
 describe('getTaxYearKey', () => {
   it('returns 2025-26 for a date in April 2025', () => {
@@ -47,5 +47,24 @@ describe('recentTaxYears', () => {
     expect(result[0]).toBe(current)
     expect(result[1]).toBe(expected[1])
     expect(result).toEqual(expected)
+  })
+})
+
+describe('taxPeriodMonthLabel', () => {
+  it('returns April for period 1', () => {
+    expect(taxPeriodMonthLabel(1)).toBe('April')
+  })
+
+  it('returns March for period 12', () => {
+    expect(taxPeriodMonthLabel(12)).toBe('March')
+  })
+
+  it('returns October for period 7', () => {
+    expect(taxPeriodMonthLabel(7)).toBe('October')
+  })
+
+  it('falls back to a generic label for out-of-range periods', () => {
+    expect(taxPeriodMonthLabel(0)).toBe('Period 0')
+    expect(taxPeriodMonthLabel(13)).toBe('Period 13')
   })
 })

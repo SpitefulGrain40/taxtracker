@@ -5,7 +5,7 @@ import { PeriodToggle } from './PeriodToggle'
 describe('PeriodToggle', () => {
   it('renders the three period options and marks the active one', () => {
     render(<PeriodToggle value="ytd" onChange={() => {}} />)
-    expect(screen.getByRole('button', { name: /this month/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /monthly/i })).toBeInTheDocument()
     const ytd = screen.getByRole('button', { name: /year to date/i })
     expect(ytd).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: /projected/i })).toBeInTheDocument()

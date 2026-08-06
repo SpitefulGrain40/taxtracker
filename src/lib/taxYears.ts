@@ -45,6 +45,17 @@ export function getTaxPeriod(date: Date): number {
   return month >= 4 ? month - 3 : month + 9
 }
 
+const TAX_PERIOD_MONTHS = [
+  'April', 'May', 'June', 'July', 'August', 'September',
+  'October', 'November', 'December', 'January', 'February', 'March',
+]
+
+/** Month name for a tax period (1 = April … 12 = March). */
+export function taxPeriodMonthLabel(period: number): string {
+  const name = TAX_PERIOD_MONTHS[period - 1]
+  return name ?? `Period ${period}`
+}
+
 /** The current tax year key plus the previous (count-1) years, newest first. */
 export function recentTaxYears(count: number): TaxYearKey[] {
   const [startStr] = getCurrentTaxYear().split('-')

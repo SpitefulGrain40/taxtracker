@@ -1,7 +1,7 @@
 export type Period = 'month' | 'ytd' | 'projected'
 
 const OPTIONS: { value: Period; label: string }[] = [
-  { value: 'month', label: 'This month' },
+  { value: 'month', label: 'Monthly' },
   { value: 'ytd', label: 'Year to date' },
   { value: 'projected', label: 'Projected' },
 ]
