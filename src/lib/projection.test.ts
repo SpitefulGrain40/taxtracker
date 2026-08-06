@@ -96,4 +96,40 @@ describe('projectTaxYear', () => {
     // the extra future salary is PAYE-withheld, so the year-end set-aside barely moves
     expect(statedHigher.shortfall).toBeCloseTo(runRate.shortfall, 0)
   })
+
+  describe('breakdown', () => {
+    it('base-only: a single base item close to projectedGross', () => {
+      const p = projectTaxYear(baseInput())
+      expect(p.breakdown.items).toHaveLength(1)
+      expect(p.breakdown.items[0].type).toBe('base')
+      expect(p.breakdown.items[0].amount).toBeCloseTo(p.projectedGross, 2)
+      expect(p.breakdown.baseAnnualised).toBeCloseTo(p.projectedGross, 2)
+    })
+
+    it('with a bonus: includes a bonus line equal to the bonus amount, and the sum invariant holds', () => {
+      const bonus: FutureIncomeEvent = { id: 'b', type: 'bonus', label: 'Bonus', amount: 8000, effectiveDate: '2026-03-31', taxYear: '2025-26', subjectToNI: true }
+      const p = projectTaxYear(baseInput({ events: [bonus] }))
+      const bonusItem = p.breakdown.items.find(i => i.type === 'bonus')
+      expect(bonusItem).toBeDefined()
+      expect(bonusItem?.amount).toBeCloseTo(8000, 2)
+      const nonBaseSum = p.breakdown.items.filter(i => i.type !== 'base').reduce((s, i) => s + i.amount, 0)
+      expect(p.breakdown.baseAnnualised + nonBaseSum).toBeCloseTo(p.projectedGross, 2)
+    })
+
+    it('with a pay rise: includes a positive pay-rise item and the sum invariant holds', () => {
+      const raise: FutureIncomeEvent = { id: 'r', type: 'pay-rise', label: 'Raise', amount: 96000, effectiveDate: '2025-12-01', taxYear: '2025-26', subjectToNI: true }
+      const p = projectTaxYear(baseInput({ events: [raise] }))
+      const raiseItem = p.breakdown.items.find(i => i.type === 'pay-rise')
+      expect(raiseItem).toBeDefined()
+      expect(raiseItem!.amount).toBeGreaterThan(0)
+      const nonBaseSum = p.breakdown.items.filter(i => i.type !== 'base').reduce((s, i) => s + i.amount, 0)
+      expect(p.breakdown.baseAnnualised + nonBaseSum).toBeCloseTo(p.projectedGross, 2)
+    })
+
+    it('is empty and zeroed when unavailable', () => {
+      const p = projectTaxYear(baseInput({ taxYear: taxYear([]) }))
+      expect(p.breakdown.items).toEqual([])
+      expect(p.breakdown.baseAnnualised).toBe(0)
+    })
+  })
 })

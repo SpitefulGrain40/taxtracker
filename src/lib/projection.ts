@@ -1,4 +1,4 @@
-import type { TaxYear, FutureIncomeEvent } from '../types'
+import type { TaxYear, FutureIncomeEvent, FutureIncomeEventType } from '../types'
 import type { TaxRates } from './taxRates'
 import {
   incomeTax, employeeNI, effectivePersonalAllowance, parseTaxCode, marginalBand,
@@ -15,6 +15,13 @@ export interface ProjectionInput {
   rates: TaxRates
 }
 
+export interface ProjectionItem {
+  id: string
+  type: 'base' | FutureIncomeEventType
+  label: string
+  amount: number
+}
+
 export interface TaxProjection {
   available: boolean
   projectedGross: number     // projected annual employment gross (incl. one-offs)
@@ -25,6 +32,7 @@ export interface TaxProjection {
   monthsElapsed: number
   usedStatedSalary: boolean
   assumptions: string[]
+  breakdown: { baseAnnualised: number; items: ProjectionItem[] }
 }
 
 function latestPayslip(ty: TaxYear) {
@@ -42,6 +50,7 @@ export function projectTaxYear(input: ProjectionInput): TaxProjection {
       available: false, projectedGross: 0, projectedTaxDue: 0, projectedPAYE: 0,
       shortfall: 0, band: 'basic', monthsElapsed: 0, usedStatedSalary: false,
       assumptions: ['No payslip yet — add one to project your year-end position.'],
+      breakdown: { baseAnnualised: 0, items: [] },
     }
   }
 
@@ -67,6 +76,21 @@ export function projectTaxYear(input: ProjectionInput): TaxProjection {
   const oneOffNoNI = oneOffs.filter(e => e.subjectToNI === false).reduce((s, e) => s + e.amount, 0)
   const projectedGross = ytdGross + futureGross + oneOffTotal
   const niBase = projectedGross - oneOffNoNI
+
+  // Composition breakdown: base run-rate, pay-rise delta above it, one-off events.
+  const baseAnnualised = ytdGross + monthlyForFuture * (12 - m)
+  const breakdownItems: ProjectionItem[] = [
+    { id: 'base', type: 'base', label: 'Base pay (annualised)', amount: baseAnnualised },
+  ]
+  const payRiseDelta = futureGross - monthlyForFuture * (12 - m)
+  if (Math.abs(payRiseDelta) > 0.005) {
+    breakdownItems.push({ id: 'pay-rise', type: 'pay-rise', label: 'Pay rise', amount: payRiseDelta })
+  }
+  for (const e of oneOffs) {
+    const defaultLabel = e.type === 'bonus' ? 'Bonus' : 'RSU vest'
+    breakdownItems.push({ id: e.id, type: e.type, label: e.label || defaultLabel, amount: e.amount })
+  }
+  const breakdown = { baseAnnualised, items: breakdownItems }
 
   const summary = summariseTaxYear(taxYear)
   const { dividendIncome: dividends, savingsIncome: savings, benefitsInKind: benefits } = summary
@@ -108,6 +132,6 @@ export function projectTaxYear(input: ProjectionInput): TaxProjection {
 
   return {
     available: true, projectedGross, projectedTaxDue, projectedPAYE, shortfall,
-    band, monthsElapsed: m, usedStatedSalary, assumptions,
+    band, monthsElapsed: m, usedStatedSalary, assumptions, breakdown,
   }
 }
