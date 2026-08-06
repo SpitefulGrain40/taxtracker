@@ -6,6 +6,7 @@ import { DocumentsScreen } from './screens/DocumentsScreen'
 import { SharesScreen } from './screens/SharesScreen'
 import { TaxReturnScreen } from './screens/TaxReturnScreen'
 import { AccountScreen } from './screens/AccountScreen'
+import { TaxYearProvider } from './hooks/useSelectedTaxYear'
 
 // Derive the router basename from the deployment base path so it always matches
 // where the app is actually served (production /taxtracker/, staging
@@ -20,16 +21,18 @@ interface Props {
 export function AppRouter({ onLock }: Props) {
   return (
     <BrowserRouter basename={BASENAME}>
-      <AppShell onLock={onLock}>
-        <Routes>
-          <Route path="/" element={<DashboardScreen />} />
-          <Route path="/income" element={<IncomeScreen />} />
-          <Route path="/documents" element={<DocumentsScreen />} />
-          <Route path="/shares" element={<SharesScreen />} />
-          <Route path="/return" element={<TaxReturnScreen />} />
-          <Route path="/account" element={<AccountScreen />} />
-        </Routes>
-      </AppShell>
+      <TaxYearProvider>
+        <AppShell onLock={onLock}>
+          <Routes>
+            <Route path="/" element={<DashboardScreen />} />
+            <Route path="/income" element={<IncomeScreen />} />
+            <Route path="/documents" element={<DocumentsScreen />} />
+            <Route path="/shares" element={<SharesScreen />} />
+            <Route path="/return" element={<TaxReturnScreen />} />
+            <Route path="/account" element={<AccountScreen />} />
+          </Routes>
+        </AppShell>
+      </TaxYearProvider>
     </BrowserRouter>
   )
 }

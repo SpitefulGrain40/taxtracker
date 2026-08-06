@@ -44,3 +44,13 @@ export function getTaxPeriod(date: Date): number {
   const month = date.getMonth() + 1
   return month >= 4 ? month - 3 : month + 9
 }
+
+/** The current tax year key plus the previous (count-1) years, newest first. */
+export function recentTaxYears(count: number): TaxYearKey[] {
+  const [startStr] = getCurrentTaxYear().split('-')
+  const start = parseInt(startStr, 10)
+  return Array.from({ length: count }, (_, i) => {
+    const y = start - i
+    return `${y}-${String(y + 1).slice(-2)}` as TaxYearKey
+  })
+}
