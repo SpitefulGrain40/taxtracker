@@ -4,7 +4,7 @@ import { MoreDrawer } from './MoreDrawer'
 
 const props = {
   open: true, onClose: vi.fn(), onNavigate: vi.fn(), onSubmitFeedback: vi.fn(),
-  onSwitchProfile: vi.fn(), onLock: vi.fn(), profileName: 'Mike',
+  onLock: vi.fn(),
 }
 
 describe('MoreDrawer', () => {
@@ -25,7 +25,6 @@ describe('MoreDrawer', () => {
       'Account & profile',
       'Price settings',
       'Submit feedback',
-      'Switch profile (Mike)',
       'Lock',
     ])
   })
@@ -52,12 +51,6 @@ describe('MoreDrawer', () => {
     render(<MoreDrawer {...props} />)
     screen.getByRole('button', { name: /submit feedback/i }).click()
     expect(props.onSubmitFeedback).toHaveBeenCalled()
-  })
-
-  it('shows the active profile name and triggers a profile switch', () => {
-    render(<MoreDrawer {...props} />)
-    screen.getByRole('button', { name: /switch profile \(mike\)/i }).click()
-    expect(props.onSwitchProfile).toHaveBeenCalled()
   })
 
   it('triggers lock', () => {

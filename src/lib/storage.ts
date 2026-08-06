@@ -16,11 +16,9 @@ export const storage = {
   getClaudeKey: () => localStorage.getItem(KEYS.CLAUDE_KEY),
   setClaudeKey: (key: string) => localStorage.setItem(KEYS.CLAUDE_KEY, key),
 
-  getActiveProfile: (): 'mike' | 'gemma' => {
-    const val = localStorage.getItem(KEYS.ACTIVE_PROFILE)
-    return val === 'mike' || val === 'gemma' ? val : 'mike'
-  },
-  setActiveProfile: (id: 'mike' | 'gemma') => localStorage.setItem(KEYS.ACTIVE_PROFILE, id),
+  // Single fixed account per install — always 'mike'. Ignoring any stored
+  // value auto-recovers a browser previously stuck on 'gemma' (fix #11).
+  getActiveProfile: (): 'mike' | 'gemma' => 'mike',
 
   setPinHash: (profileId: string, hash: string, salt: string) => {
     localStorage.setItem(`tt_pin_${profileId}`, JSON.stringify({ hash, salt }))

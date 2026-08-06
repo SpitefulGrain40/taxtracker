@@ -1,17 +1,15 @@
 import { useEffect } from 'react'
-import { ClipboardCheck, UserCog, LineChart, MessageSquare, Users, Lock, X } from 'lucide-react'
+import { ClipboardCheck, UserCog, LineChart, MessageSquare, Lock, X } from 'lucide-react'
 
 interface Props {
   open: boolean
   onClose: () => void
   onNavigate: (to: string) => void
   onSubmitFeedback: () => void
-  onSwitchProfile: () => void
   onLock: () => void
-  profileName: string
 }
 
-export function MoreDrawer({ open, onClose, onNavigate, onSubmitFeedback, onSwitchProfile, onLock, profileName }: Props) {
+export function MoreDrawer({ open, onClose, onNavigate, onSubmitFeedback, onLock }: Props) {
   useEffect(() => {
     if (!open) return
 
@@ -35,7 +33,6 @@ export function MoreDrawer({ open, onClose, onNavigate, onSubmitFeedback, onSwit
     { label: 'Account & profile', icon: UserCog, onClick: () => onNavigate('/account') },
     { label: 'Price settings', icon: LineChart, onClick: () => onNavigate('/shares') },
     { label: 'Submit feedback', icon: MessageSquare, onClick: onSubmitFeedback },
-    { label: `Switch profile (${profileName})`, icon: Users, onClick: onSwitchProfile },
     { label: 'Lock', icon: Lock, onClick: onLock },
   ]
 

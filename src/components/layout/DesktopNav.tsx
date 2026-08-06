@@ -10,11 +10,10 @@ const NAV_ITEMS = [
 
 interface Props {
   profileName: string
-  onProfileClick: () => void
   onMoreClick: () => void
 }
 
-export function DesktopNav({ profileName, onProfileClick, onMoreClick }: Props) {
+export function DesktopNav({ profileName, onMoreClick }: Props) {
   return (
     <nav className="hidden md:flex items-center justify-between px-8 h-14 border-b border-white/[0.06] bg-bg sticky top-0 z-50">
       <div className="font-serif text-[20px] tracking-[-0.02em]">
@@ -46,8 +45,8 @@ export function DesktopNav({ profileName, onProfileClick, onMoreClick }: Props) 
           More
         </button>
       </div>
-      <button
-        onClick={onProfileClick}
+      <NavLink
+        to="/account"
         className="flex items-center gap-2 px-3 py-[5px] rounded-full border border-white/10 text-[13px] font-medium text-text-2 hover:border-accent/30 hover:text-text-1 transition-all"
       >
         <span className="w-[26px] h-[26px] rounded-full bg-accent flex items-center justify-center text-[11px] font-semibold text-bg font-mono">
@@ -55,7 +54,7 @@ export function DesktopNav({ profileName, onProfileClick, onMoreClick }: Props) 
         </span>
         {profileName}
         <ChevronDown size={10} />
-      </button>
+      </NavLink>
     </nav>
   )
 }

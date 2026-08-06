@@ -6,7 +6,6 @@ import { DocumentsScreen } from './screens/DocumentsScreen'
 import { SharesScreen } from './screens/SharesScreen'
 import { TaxReturnScreen } from './screens/TaxReturnScreen'
 import { AccountScreen } from './screens/AccountScreen'
-import { storage } from './lib/storage'
 
 // Derive the router basename from the deployment base path so it always matches
 // where the app is actually served (production /taxtracker/, staging
@@ -18,20 +17,10 @@ interface Props {
   onLock: () => void
 }
 
-// Every data hook reads the active profile once, at mount, and there are two
-// profiles (Mike and Gemma). Reloading after the switch is the simplest way to
-// guarantee every screen refetches against the new profile rather than showing
-// a mix of the two.
-const handleProfileSwitch = () => {
-  const next = storage.getActiveProfile() === 'mike' ? 'gemma' : 'mike'
-  storage.setActiveProfile(next)
-  window.location.reload()
-}
-
 export function AppRouter({ onLock }: Props) {
   return (
     <BrowserRouter basename={BASENAME}>
-      <AppShell onProfileSwitch={handleProfileSwitch} onLock={onLock}>
+      <AppShell onLock={onLock}>
         <Routes>
           <Route path="/" element={<DashboardScreen />} />
           <Route path="/income" element={<IncomeScreen />} />
