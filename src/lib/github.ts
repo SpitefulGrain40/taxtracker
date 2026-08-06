@@ -34,15 +34,22 @@ export class GitHubDataClient {
 
   async writeFile<T>(path: string, data: T, sha?: string): Promise<string | undefined> {
     const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))))
-    const res = await this.octokit.repos.createOrUpdateFileContents({
-      owner: this.owner,
-      repo: this.repo,
-      path,
-      message: `chore: update ${path}`,
-      content,
-      ...(sha ? { sha } : {}),
-    })
-    return res.data?.content?.sha
+    const base = { owner: this.owner, repo: this.repo, path, message: `chore: update ${path}` }
+    try {
+      const res = await this.octokit.repos.createOrUpdateFileContents({ ...base, content, ...(sha ? { sha } : {}) })
+      return res.data?.content?.sha
+    } catch (err: unknown) {
+      // File already exists / stale sha → re-read the current sha and retry once.
+      const status = (err as { status?: number }).status
+      if (status === 409 || status === 422) {
+        const existing = await this.readFile<unknown>(path)
+        if (existing?.sha) {
+          const res = await this.octokit.repos.createOrUpdateFileContents({ ...base, content, sha: existing.sha })
+          return res.data?.content?.sha
+        }
+      }
+      throw err
+    }
   }
 }
 
