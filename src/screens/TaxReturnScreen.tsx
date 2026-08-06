@@ -42,7 +42,10 @@ export function TaxReturnScreen() {
   const exportSections = isCurrentYear ? model.sections : model.sections.filter(s => s.code !== 'CGT')
 
   const copyToClipboard = () => {
-    const lines = model.sections.flatMap(s => [
+    // Copy the same sections the export ships: on a past year the CGT figures are
+    // today's holdings, not that year's, and these numbers get pasted straight
+    // into an HMRC form — so they must not be carried over silently.
+    const lines = exportSections.flatMap(s => [
       `## ${s.title}`,
       ...s.boxes.map(b => `${b.box !== '—' ? `Box ${b.box}: ` : ''}${b.label}: ${b.value == null ? '(needs input)' : `£${b.value.toLocaleString('en-GB', { minimumFractionDigits: 2 })}`}`),
       '',
