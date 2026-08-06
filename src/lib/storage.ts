@@ -1,7 +1,6 @@
 const KEYS = {
   GITHUB_PAT: 'tt_github_pat',
   CLAUDE_KEY: 'tt_claude_key',
-  ACTIVE_PROFILE: 'tt_active_profile',
   PIN_HASH: 'tt_pin_hash',      // per-profile: tt_pin_hash_mike
   PIN_SALT: 'tt_pin_salt',
   LAST_FX_RATE: 'tt_last_fx_',  // prefix + currency, e.g. tt_last_fx_USD

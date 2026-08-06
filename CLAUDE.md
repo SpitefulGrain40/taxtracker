@@ -1,6 +1,8 @@
 # TaxTracker — Claude Code Context
 
-UK personal tax tracker PWA for Mike and Gemma. React + Vite + Tailwind CSS v4, deployed to GitHub Pages, data stored in a private GitHub repo.
+UK personal tax tracker PWA. React + Vite + Tailwind CSS v4, deployed to GitHub Pages, data stored in a private GitHub repo.
+
+**Account model: ONE account per install.** Each person opens the app and sets up their own data repo + keys + PIN; sharing = share the URL, they set up their own. There is no profile switching and no cross-account access. The active profile is a single fixed namespace (`getActiveProfile()` always returns `'mike'`; the `data/mike/…` path is that namespace, kept as-is to avoid migration — cosmetic only, since each person has their own repo).
 
 ## Critical rules — read before any edit
 
@@ -10,11 +12,11 @@ UK personal tax tracker PWA for Mike and Gemma. React + Vite + Tailwind CSS v4, 
 - **Design tokens live in `src/index.css` `@theme` block** — not `tailwind.config.ts`. Tailwind v4 does not read `tailwind.config.ts` for tokens.
 - **No backend.** This is a static PWA. No server, no environment variables at runtime, no secrets in source code.
 - **Secrets in localStorage only** — GitHub PAT and Claude API key are entered by the user and stored in `localStorage`. They must never appear in source code, git history, or the data repo.
-- **Run `npm run test` after any change to `src/lib/` or `src/components/ui/`.** All tests (134 at last count) must pass before committing.
+- **Run `npm run test` after any change to `src/lib/` or `src/components/ui/`.** All tests (214 at last count) must pass before committing.
 
 ## Project identity
 
-**Users:** Mike (Android, Windows PC) and Gemma (iPhone). Both use the same private data repo but separate profiles.
+**Users:** one account per install (see Account model above). Primary user Mike is on Android / Windows.
 
 **Core screens (5):**
 1. Dashboard — live running tax position, action items
@@ -152,7 +154,7 @@ Key modules from Plan 2 available for reuse:
 ```bash
 npm run dev           # local dev server at localhost:5173/taxtracker/
 npm run build         # production build to dist/
-npm run test          # run all tests (134 passing)
+npm run test          # run all tests (214 passing)
 npm run test:watch    # watch mode
 npm run test:coverage # coverage report
 ```
