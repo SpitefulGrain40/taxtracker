@@ -126,6 +126,24 @@ describe('projectTaxYear', () => {
       expect(p.breakdown.baseAnnualised + nonBaseSum).toBeCloseTo(p.projectedGross, 2)
     })
 
+    it('itemises the pay-rise delta as the amount above the flat run-rate', () => {
+      const raise: FutureIncomeEvent = { id: 'r', type: 'pay-rise', label: 'Raise', amount: 96000, effectiveDate: '2025-12-01', taxYear: '2025-26', subjectToNI: true }
+      const p = projectTaxYear(baseInput({ events: [raise] }))
+      const item = p.breakdown.items.find(i => i.type === 'pay-rise')
+      // periods 9-12 move from 5000/mo (30000 ytd / 6) to 8000/mo (96000 / 12)
+      expect(item?.amount).toBeCloseTo(12000, 2)
+    })
+
+    it('keeps the breakdown adding up when a bonus and a pay rise are combined', () => {
+      const raise: FutureIncomeEvent = { id: 'r', type: 'pay-rise', label: 'Raise', amount: 96000, effectiveDate: '2025-12-01', taxYear: '2025-26', subjectToNI: true }
+      const bonus: FutureIncomeEvent = { id: 'b', type: 'bonus', label: 'Bonus', amount: 8000, effectiveDate: '2026-03-31', taxYear: '2025-26', subjectToNI: true }
+      const p = projectTaxYear(baseInput({ events: [raise, bonus] }))
+      const nonBase = p.breakdown.items.filter(i => i.type !== 'base').reduce((s, i) => s + i.amount, 0)
+      expect(p.breakdown.baseAnnualised + nonBase).toBeCloseTo(p.projectedGross, 2)
+      expect(p.breakdown.items.some(i => i.type === 'bonus')).toBe(true)
+      expect(p.breakdown.items.some(i => i.type === 'pay-rise')).toBe(true)
+    })
+
     it('is empty and zeroed when unavailable', () => {
       const p = projectTaxYear(baseInput({ taxYear: taxYear([]) }))
       expect(p.breakdown.items).toEqual([])
