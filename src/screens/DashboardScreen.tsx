@@ -35,6 +35,7 @@ export function DashboardScreen() {
   if (!hasAnyPayslip) return <FirstPayslipPrompt />
 
   // Monthly view: payslips in this tax year, oldest first, defaulting to the latest.
+  const hasMultipleEmployers = taxYear.employment.length > 1
   const monthlyPayslips = taxYear.employment.flatMap(e => e.payslips).sort((a, b) => a.taxPeriod - b.taxPeriod)
   const latestMonthlyPayslip = monthlyPayslips[monthlyPayslips.length - 1]
   const selectedPayslip = monthlyPayslips.find(p => p.id === selectedPayslipId) ?? latestMonthlyPayslip
@@ -86,7 +87,7 @@ export function DashboardScreen() {
           >
             {monthlyPayslips.map(p => (
               <option key={p.id} value={p.id}>
-                {taxPeriodMonthLabel(p.taxPeriod)}
+                {hasMultipleEmployers ? `${taxPeriodMonthLabel(p.taxPeriod)} · ${p.employerName}` : taxPeriodMonthLabel(p.taxPeriod)}
               </option>
             ))}
           </select>
