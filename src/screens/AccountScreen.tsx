@@ -7,6 +7,7 @@ import { useProfile } from '../hooks/useProfile'
 import { useTaxYear } from '../hooks/useTaxYear'
 import { useFutureEvents } from '../hooks/useFutureEvents'
 import { useSelectedTaxYear } from '../hooks/useSelectedTaxYear'
+import { TaxYearSelector } from '../components/ui/TaxYearSelector'
 import { storage } from '../lib/storage'
 import { getTaxYearLabel } from '../lib/taxYears'
 
@@ -34,6 +35,7 @@ export function AccountScreen() {
     <div>
       <div className="flex items-baseline gap-4 mb-6 pb-5 border-b border-white/[0.06]">
         <h1 className="font-serif text-[28px] tracking-[-0.03em]">Account</h1>
+        <TaxYearSelector />
       </div>
 
       {loading && !profile && <div className="text-text-2 text-sm py-8">Loading your account…</div>}

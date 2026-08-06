@@ -104,14 +104,18 @@ export function FutureEventsSection({ events, taxYearKey, onSave }: Props) {
       setAddError('Pick an effective date.')
       return
     }
-    // The event is tagged with `taxYearKey` and projection.ts filters on that tag
+    // The event is tagged with a tax year and projection.ts filters on that tag
     // alone. A date outside the tagged year would be counted in the wrong year —
     // an earlier date double-counts against YTD figures that already include it.
-    const startIso = toIsoDay(getTaxYearStartDate(taxYearKey))
-    const endIso = toIsoDay(getTaxYearEndDate(taxYearKey))
+    // The list shows events from every year, so an event being EDITED is checked
+    // against its own tagged year; only a NEW event belongs to the selected one.
+    const editingEvent = editingId ? items.find(e => e.id === editingId) : undefined
+    const validationYear = editingEvent?.taxYear ?? taxYearKey
+    const startIso = toIsoDay(getTaxYearStartDate(validationYear))
+    const endIso = toIsoDay(getTaxYearEndDate(validationYear))
     if (effectiveDate < startIso || effectiveDate > endIso) {
       setAddError(
-        `The date must fall in the ${getTaxYearLabel(taxYearKey)} tax year — between ${formatDate(startIso)} and ${formatDate(endIso)}.`
+        `The date must fall in the ${getTaxYearLabel(validationYear)} tax year — between ${formatDate(startIso)} and ${formatDate(endIso)}.`
       )
       return
     }
@@ -188,7 +192,10 @@ export function FutureEventsSection({ events, taxYearKey, onSave }: Props) {
                     {TYPE_LABELS[event.type]}
                   </span>
                 </div>
-                <div className="text-text-2 text-xs mt-0.5">{formatDate(event.effectiveDate)}</div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-text-2 text-xs">{formatDate(event.effectiveDate)}</span>
+                  <span className="font-mono text-[10px] text-text-2">{getTaxYearLabel(event.taxYear)}</span>
+                </div>
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 <span className="font-mono text-sm text-text-1">{formatMoney(event.amount)}</span>

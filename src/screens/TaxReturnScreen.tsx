@@ -11,6 +11,7 @@ import { getDataClient } from '../lib/github'
 import { readShareLots } from '../lib/dataRepo'
 import { buildTaxReturn } from '../lib/taxReturn'
 import { CURRENT_RATES as R } from '../lib/taxRates'
+import { getCurrentTaxYear, getTaxYearLabel } from '../lib/taxYears'
 import type { ShareLot } from '../types'
 
 export function TaxReturnScreen() {
@@ -32,6 +33,13 @@ export function TaxReturnScreen() {
   if (loading || !taxYear) return <div className="text-text-2 text-sm py-8">Loading your return…</div>
 
   const model = buildTaxReturn(taxYear, lots, R)
+
+  // The share-lot register is a running holding with no date filter, so the CGT
+  // section always describes TODAY's position. That is fine for the year in
+  // progress, but for a past year it would sit next to that year's employment
+  // boxes and mislead — so it is flagged on screen and left out of the export.
+  const isCurrentYear = year === getCurrentTaxYear()
+  const exportSections = isCurrentYear ? model.sections : model.sections.filter(s => s.code !== 'CGT')
 
   const copyToClipboard = () => {
     const lines = model.sections.flatMap(s => [
@@ -69,13 +77,34 @@ export function TaxReturnScreen() {
         These figures map to the boxes on the HMRC online Self Assessment form. Copy each number into the matching box — you never need to understand the tax rules behind them.
       </AlertStrip>
 
+      {!isCurrentYear && (
+        <div className="mt-4">
+          <AlertStrip variant="yellow">
+            <strong>Capital gains shown are your current holdings, not scoped to this tax year</strong> — do not use
+            these figures for a {getTaxYearLabel(year)} return. They are left out of the encrypted export, so the file
+            you send your accountant contains the {getTaxYearLabel(year)} employment, dividend and savings figures only.
+          </AlertStrip>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-        {model.sections.map(s => <ReturnSection key={s.code} section={s} />)}
+        {model.sections.map(s =>
+          s.code === 'CGT' && !isCurrentYear ? (
+            <div key={s.code} className="space-y-2">
+              <ReturnSection section={s} />
+              <p className="text-yellow text-xs">
+                Today's holdings — not scoped to {getTaxYearLabel(year)}, and excluded from the export.
+              </p>
+            </div>
+          ) : (
+            <ReturnSection key={s.code} section={s} />
+          )
+        )}
       </div>
 
       {showExport && (
         <ExportDialog
-          data={{ taxYear: model.taxYear, generatedFor: profileId, sections: model.sections }}
+          data={{ taxYear: model.taxYear, generatedFor: profileId, sections: exportSections }}
           filename={`taxtracker-${profileId}-${model.taxYear}.enc.json`}
           onClose={() => setShowExport(false)}
         />

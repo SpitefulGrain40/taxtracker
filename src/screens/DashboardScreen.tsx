@@ -65,6 +65,17 @@ export function DashboardScreen() {
   const monthsIn = monthsIntoTaxYear(new Date())
   const needsSA = s.dividendIncome > R.dividendAllowance || s.savingsIncome > R.psaHigherRate || (profile?.otherIncomeSources.includes('cgt') ?? false)
 
+  const selectedMonthLabel = taxPeriodMonthLabel(selectedPayslip.taxPeriod)
+
+  // A finished year has no "future months", so drop the assumptions that talk
+  // about them — they'd imply the figures are still moving.
+  const assumptions = isCurrentYear
+    ? projection.assumptions
+    : projection.assumptions.filter(a => {
+        const lower = a.toLowerCase()
+        return !lower.includes('typical month') && !lower.includes('future months')
+      })
+
   const gbp = (n: number) => `£${Math.round(n).toLocaleString('en-GB')}`
 
   return (
@@ -108,9 +119,9 @@ export function DashboardScreen() {
 
       {period === 'month' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
-          <StatCard label="Gross this month" value={gbp(monthFigures.gross)} note={taxPeriodMonthLabel(selectedPayslip.taxPeriod)} icon={<PoundSterling size={15} />} />
-          <StatCard label="Tax this month" value={gbp(monthFigures.tax)} variant="red" note="income tax withheld" icon={<TriangleAlert size={15} />} />
-          <StatCard label="NI this month" value={gbp(monthFigures.ni)} variant="blue" note={<JargonTip term="NI" explanation="National Insurance — a separate tax on your earnings that funds the state pension and some benefits." />} icon={<ShieldCheck size={15} />} />
+          <StatCard label={`Gross — ${selectedMonthLabel}`} value={gbp(monthFigures.gross)} note="from that month's payslip" icon={<PoundSterling size={15} />} />
+          <StatCard label={`Tax — ${selectedMonthLabel}`} value={gbp(monthFigures.tax)} variant="red" note="income tax withheld" icon={<TriangleAlert size={15} />} />
+          <StatCard label={`NI — ${selectedMonthLabel}`} value={gbp(monthFigures.ni)} variant="blue" note={<JargonTip term="NI" explanation="National Insurance — a separate tax on your earnings that funds the state pension and some benefits." />} icon={<ShieldCheck size={15} />} />
         </div>
       )}
 
@@ -132,20 +143,28 @@ export function DashboardScreen() {
       {projection.available && period === 'projected' && (
         <section className="mt-6">
           <div className="flex items-center gap-2 mb-3">
-            <h2 className="font-serif text-base">Projected year-end</h2>
-            <span className="font-mono text-[10px] uppercase tracking-wide text-yellow bg-yellow/10 px-2 py-0.5 rounded">Estimate</span>
+            <h2 className="font-serif text-base">{isCurrentYear ? 'Projected year-end' : 'Full year'}</h2>
+            {isCurrentYear ? (
+              <span className="font-mono text-[10px] uppercase tracking-wide text-yellow bg-yellow/10 px-2 py-0.5 rounded">Estimate</span>
+            ) : (
+              <span className="font-mono text-[10px] uppercase tracking-wide text-text-2 bg-surface-2 px-2 py-0.5 rounded">Full year</span>
+            )}
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <StatCard label="Projected income" value={gbp(projection.projectedGross)} variant="yellow" />
-            <StatCard label="Projected tax + NI" value={gbp(projection.projectedTaxDue)} variant="yellow" note={<JargonTip term="NI" explanation="National Insurance — a separate tax on your earnings that funds the state pension and some benefits." />} />
+            <StatCard label={isCurrentYear ? 'Projected income' : 'Full year income'} value={gbp(projection.projectedGross)} variant={isCurrentYear ? 'yellow' : 'default'} />
+            <StatCard label={isCurrentYear ? 'Projected tax + NI' : 'Full year tax + NI'} value={gbp(projection.projectedTaxDue)} variant={isCurrentYear ? 'yellow' : 'default'} note={<JargonTip term="NI" explanation="National Insurance — a separate tax on your earnings that funds the state pension and some benefits." />} />
             <StatCard
-              label={projection.shortfall >= 0 ? 'Set aside for April' : 'Likely refund'}
+              label={
+                isCurrentYear
+                  ? (projection.shortfall >= 0 ? 'Set aside for April' : 'Likely refund')
+                  : (projection.shortfall >= 0 ? 'Underpaid' : 'Possible refund')
+              }
               value={gbp(Math.abs(projection.shortfall))}
               variant={projection.shortfall >= 0 ? 'red' : 'green'}
             />
           </div>
           <ul className="mt-3 space-y-1 list-disc list-inside">
-            {projection.assumptions.map((a, i) => (
+            {assumptions.map((a, i) => (
               <li key={i} className="text-text-2 text-xs">{a}</li>
             ))}
           </ul>

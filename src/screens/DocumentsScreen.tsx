@@ -9,8 +9,8 @@ import { useSelectedTaxYear } from '../hooks/useSelectedTaxYear'
 import { TaxYearSelector } from '../components/ui/TaxYearSelector'
 import { storage } from '../lib/storage'
 import { extractPayslip, extractP11D, extractP60 } from '../lib/claude'
-import { getTaxYearKey, getTaxPeriod } from '../lib/taxYears'
-import type { TaxYear, Payslip, BenefitEntry } from '../types'
+import { getTaxYearKey, getTaxYearLabel, getTaxPeriod } from '../lib/taxYears'
+import type { TaxYear, Payslip, BenefitEntry, TaxYearKey } from '../types'
 
 type DocType = 'payslip' | 'p11d' | 'p60'
 type State = 'idle' | 'extracting' | 'review' | 'error'
@@ -44,6 +44,10 @@ export function DocumentsScreen() {
   const [reviewFields, setReviewFields] = useState<{ label: string; value: string }[]>([])
   const [pendingApply, setPendingApply] = useState<((ty: TaxYear) => TaxYear) | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
+  // The tax year the uploaded document's own pay date falls in, when that can be
+  // read from it. `tt_selected_year` persists between sessions, so this may not
+  // be the year currently on screen.
+  const [documentYear, setDocumentYear] = useState<TaxYearKey | null>(null)
 
   if (loading || !taxYear) return <div className="text-text-2 text-sm py-8">Loading documents…</div>
 
@@ -53,11 +57,14 @@ export function DocumentsScreen() {
     const apiKey = storage.getClaudeKey()
     if (!apiKey) { setErrorMsg('Claude API key not found — check setup.'); setState('error'); return }
     setState('extracting')
+    setDocumentYear(null)
     try {
       const { base64, mediaType } = await fileToBase64(file)
 
       if (docType === 'payslip') {
         const r = await extractPayslip(apiKey, base64, mediaType)
+        const extractedPayDate = new Date(r.date)
+        setDocumentYear(Number.isNaN(extractedPayDate.getTime()) ? null : getTaxYearKey(extractedPayDate))
         setReviewFields([
           { label: 'Employer', value: r.employerName },
           { label: 'Basic Salary', value: gbp(r.basicSalary) },
@@ -116,7 +123,7 @@ export function DocumentsScreen() {
     setState('extracting')
     try {
       await saveTaxYear(pendingApply(taxYear))
-      setState('idle'); setPendingApply(null); setReviewFields([])
+      setState('idle'); setPendingApply(null); setReviewFields([]); setDocumentYear(null)
     } catch (e) {
       setErrorMsg(String(e)); setState('error')
     }
@@ -133,6 +140,9 @@ export function DocumentsScreen() {
   ]
 
   const typeLabels: Record<DocType, string> = { payslip: 'payslip', p11d: 'P11D', p60: 'P60' }
+
+  // Non-null only when the document's own year differs from the one being viewed.
+  const mismatchYear = documentYear && documentYear !== year ? documentYear : null
 
   return (
     <div>
@@ -160,7 +170,16 @@ export function DocumentsScreen() {
             </div>
           )}
           {state === 'review' && (
-            <ExtractReview title={`${typeLabels[docType]} read — check the values`} fields={reviewFields} onConfirm={confirm} onCancel={() => { setState('idle'); setPendingApply(null) }} />
+            <div className="space-y-4">
+              {mismatchYear && (
+                <AlertStrip variant="yellow">
+                  This {typeLabels[docType]} is dated in the <strong>{getTaxYearLabel(mismatchYear)}</strong> tax year, but you're
+                  viewing <strong>{getTaxYearLabel(year)}</strong>. Confirming will file it under {getTaxYearLabel(year)}.
+                  Switch the tax year above first if that isn't what you want.
+                </AlertStrip>
+              )}
+              <ExtractReview title={`${typeLabels[docType]} read — check the values`} fields={reviewFields} onConfirm={confirm} onCancel={() => { setState('idle'); setPendingApply(null); setDocumentYear(null) }} />
+            </div>
           )}
           {state === 'idle' && (
             <div className="space-y-4">
@@ -184,7 +203,7 @@ export function DocumentsScreen() {
         {/* Document list */}
         <div className="bg-surface border border-white/[0.06] rounded-[10px] overflow-hidden">
           <div className="px-5 py-4 border-b border-white/[0.06]">
-            <h2 className="font-serif text-base">This tax year</h2>
+            <h2 className="font-serif text-base">{getTaxYearLabel(year)}</h2>
           </div>
           <DocumentList items={docs} />
         </div>

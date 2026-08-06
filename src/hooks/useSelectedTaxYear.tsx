@@ -10,8 +10,11 @@ const TaxYearContext = createContext<Ctx | null>(null)
 
 export function TaxYearProvider({ children }: { children: ReactNode }) {
   const [year, setYearState] = useState<TaxYearKey>(() => {
+    // Only accept a stored year the selector can actually offer. A well-formed
+    // year that has aged out of the list would leave the <select> matching no
+    // option — showing one year while the screens read another.
     const stored = localStorage.getItem(KEY)
-    return (stored && /^\d{4}-\d{2}$/.test(stored)) ? (stored as TaxYearKey) : getCurrentTaxYear()
+    return stored && YEARS.includes(stored as TaxYearKey) ? (stored as TaxYearKey) : getCurrentTaxYear()
   })
   const setYear = (y: TaxYearKey) => { localStorage.setItem(KEY, y); setYearState(y) }
   return <TaxYearContext.Provider value={{ year, setYear, years: YEARS }}>{children}</TaxYearContext.Provider>

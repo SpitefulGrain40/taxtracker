@@ -12,7 +12,7 @@ import { storage } from '../lib/storage'
 import { summariseTaxYear } from '../lib/incomeSummary'
 import { projectTaxYear } from '../lib/projection'
 import { CURRENT_RATES as R } from '../lib/taxRates'
-import { taxPeriodMonthLabel } from '../lib/taxYears'
+import { getCurrentTaxYear, taxPeriodMonthLabel } from '../lib/taxYears'
 import { payslipPeriodFigures } from '../lib/payslipFigures'
 import { FirstPayslipPrompt } from '../components/ui/FirstPayslipPrompt'
 
@@ -42,9 +42,6 @@ export function IncomeScreen() {
   })
   const showProjected = period === 'projected' && projection.available
   const allPayslips = taxYear.employment.flatMap(e => e.payslips)
-  const salSac = allPayslips.length
-    ? allPayslips[allPayslips.length - 1].salarySacrifice.reduce((sum, li) => sum + li.amount, 0)
-    : 0
 
   // Monthly view: payslips in this tax year, oldest first, defaulting to the latest.
   const hasMultipleEmployers = taxYear.employment.length > 1
@@ -55,14 +52,26 @@ export function IncomeScreen() {
   const monthLabel = taxPeriodMonthLabel(selectedPayslip.taxPeriod)
   const showMonth = period === 'month'
 
+  // Salary sacrifice is a per-period figure, so it has to come from the payslip
+  // actually on screen — the selected month's in Monthly view, the latest by tax
+  // period otherwise (flatMap order is not chronological).
+  const salSacSource = showMonth ? selectedPayslip : latestMonthlyPayslip
+  const salSac = salSacSource ? salSacSource.salarySacrifice.reduce((sum, li) => sum + li.amount, 0) : 0
+
+  // A past year is finished: nothing is being projected and no figure is "to date".
+  const isCurrentYear = year === getCurrentTaxYear()
+  const periodLabel = period === 'projected'
+    ? (isCurrentYear ? 'projected year-end' : 'full year')
+    : showMonth
+      ? monthLabel
+      : (isCurrentYear ? 'year to date' : 'full year')
+
   return (
     <div>
       <div className="flex items-baseline gap-4 mb-6 pb-5 border-b border-white/[0.06]">
         <h1 className="font-serif text-[28px] tracking-[-0.03em]">Where your income comes from</h1>
         <TaxYearSelector />
-        <span className="font-mono text-xs text-text-2">
-          {period === 'projected' ? 'projected year-end' : showMonth ? monthLabel : 'year to date'}
-        </span>
+        <span className="font-mono text-xs text-text-2">{periodLabel}</span>
       </div>
       <div className="flex items-center justify-between mb-4">
         <PeriodToggle value={period} onChange={setPeriod} />
@@ -85,16 +94,20 @@ export function IncomeScreen() {
           <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
             <h2 className="font-serif text-base">Income sources</h2>
             <span className="font-mono text-[10px] bg-accent-soft text-accent px-2 py-0.5 rounded">
-              {period === 'projected' ? 'PROJECTED' : showMonth ? monthLabel.toUpperCase() : 'YTD'}
+              {showMonth ? monthLabel.toUpperCase() : !isCurrentYear ? 'FULL YEAR' : period === 'projected' ? 'PROJECTED' : 'YTD'}
             </span>
           </div>
           {showProjected ? (
             <div className="px-5 py-4 flex items-center justify-between">
               <span className="flex items-center gap-2 text-xs font-semibold tracking-wide text-text-2">
-                Projected employment income
-                <span className="font-mono text-[10px] uppercase tracking-wide text-yellow bg-yellow/10 px-2 py-0.5 rounded">Estimate</span>
+                {isCurrentYear ? 'Projected employment income' : 'Full year employment income'}
+                {isCurrentYear ? (
+                  <span className="font-mono text-[10px] uppercase tracking-wide text-yellow bg-yellow/10 px-2 py-0.5 rounded">Estimate</span>
+                ) : (
+                  <span className="font-mono text-[10px] uppercase tracking-wide text-text-2 bg-surface-2 px-2 py-0.5 rounded">Full year</span>
+                )}
               </span>
-              <span className="font-serif text-xl text-yellow">£{Math.round(projection.projectedGross).toLocaleString('en-GB')}</span>
+              <span className={`font-serif text-xl ${isCurrentYear ? 'text-yellow' : 'text-text-1'}`}>£{Math.round(projection.projectedGross).toLocaleString('en-GB')}</span>
             </div>
           ) : (
             <>
@@ -130,11 +143,15 @@ export function IncomeScreen() {
       </div>
       <p className="text-text-2 text-xs mt-4">
         {showProjected ? (
-          'The projected figure for year-end is an estimate based on your stated salary and any future pay changes you have logged.'
+          isCurrentYear
+            ? 'The projected figure for year-end is an estimate based on your stated salary and any future pay changes you have logged.'
+            : 'This tax year is over — the full-year figure comes from the payslips you have uploaded for it.'
         ) : showMonth ? (
-          <>Salary figures shown are for <strong>{monthLabel}</strong> only, from that month's payslip. Other income sources below are shown year to date.</>
-        ) : (
+          <>Salary figures shown are for <strong>{monthLabel}</strong> only, from that month's payslip. The other income sources above are shown {isCurrentYear ? 'year to date' : 'for the full year'}.</>
+        ) : isCurrentYear ? (
           <>All figures are <JargonTip term="year to date" explanation="The running total since the tax year started on 6 April. Your latest payslip shows this." /> from your uploaded payslips.</>
+        ) : (
+          'This tax year is over — all figures are the full-year totals from the payslips you have uploaded for it.'
         )}
       </p>
     </div>
