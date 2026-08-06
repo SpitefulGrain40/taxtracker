@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { vi } from 'vitest'
+import { TaxYearProvider } from '../hooks/useSelectedTaxYear'
 
 vi.mock('../hooks/useTaxYear', () => ({
   useTaxYear: () => ({
@@ -18,7 +19,7 @@ import { DashboardScreen } from './DashboardScreen'
 // The Dashboard must show the "add your first payslip" prompt, not zeroed stats.
 describe('DashboardScreen empty state', () => {
   it('prompts for a first payslip when the tax year has no payslips', () => {
-    render(<MemoryRouter><DashboardScreen /></MemoryRouter>)
+    render(<MemoryRouter><TaxYearProvider><DashboardScreen /></TaxYearProvider></MemoryRouter>)
     expect(screen.getByText(/add your first payslip/i)).toBeInTheDocument()
   })
 })

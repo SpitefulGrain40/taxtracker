@@ -6,16 +6,18 @@ import { PeriodToggle, type Period } from '../components/ui/PeriodToggle'
 import { useTaxYear } from '../hooks/useTaxYear'
 import { useProfile } from '../hooks/useProfile'
 import { useFutureEvents } from '../hooks/useFutureEvents'
+import { useSelectedTaxYear } from '../hooks/useSelectedTaxYear'
+import { TaxYearSelector } from '../components/ui/TaxYearSelector'
 import { storage } from '../lib/storage'
 import { summariseTaxYear } from '../lib/incomeSummary'
 import { projectTaxYear } from '../lib/projection'
 import { CURRENT_RATES as R } from '../lib/taxRates'
-import { getCurrentTaxYear, getTaxYearLabel } from '../lib/taxYears'
 import { FirstPayslipPrompt } from '../components/ui/FirstPayslipPrompt'
 
 export function IncomeScreen() {
   const profileId = storage.getActiveProfile()
-  const { taxYear, loading } = useTaxYear(profileId)
+  const { year } = useSelectedTaxYear()
+  const { taxYear, loading } = useTaxYear(profileId, year)
   const { profile } = useProfile(profileId)
   const { events } = useFutureEvents(profileId)
   const [period, setPeriod] = useState<Period>('ytd')
@@ -36,7 +38,6 @@ export function IncomeScreen() {
     rates: R,
   })
   const showProjected = period === 'projected' && projection.available
-  const key = getCurrentTaxYear()
   const allPayslips = taxYear.employment.flatMap(e => e.payslips)
   const salSac = allPayslips.length
     ? allPayslips[allPayslips.length - 1].salarySacrifice.reduce((sum, li) => sum + li.amount, 0)
@@ -46,9 +47,9 @@ export function IncomeScreen() {
     <div>
       <div className="flex items-baseline gap-4 mb-6 pb-5 border-b border-white/[0.06]">
         <h1 className="font-serif text-[28px] tracking-[-0.03em]">Where your income comes from</h1>
+        <TaxYearSelector />
         <span className="font-mono text-xs text-text-2">
-          {getTaxYearLabel(key)}
-          {period === 'projected' ? ' · projected year-end' : ' · year to date'}
+          {period === 'projected' ? 'projected year-end' : 'year to date'}
         </span>
       </div>
       <div className="flex items-center justify-between mb-4">

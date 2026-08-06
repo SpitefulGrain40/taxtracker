@@ -6,13 +6,15 @@ import { SchemesSection } from '../components/account/SchemesSection'
 import { useProfile } from '../hooks/useProfile'
 import { useTaxYear } from '../hooks/useTaxYear'
 import { useFutureEvents } from '../hooks/useFutureEvents'
+import { useSelectedTaxYear } from '../hooks/useSelectedTaxYear'
 import { storage } from '../lib/storage'
-import { getCurrentTaxYear } from '../lib/taxYears'
+import { getCurrentTaxYear, getTaxYearLabel } from '../lib/taxYears'
 
 export function AccountScreen() {
   const profileId = storage.getActiveProfile()
+  const { year } = useSelectedTaxYear()
   const { profile, loading, error, saveProfile } = useProfile(profileId)
-  const { taxYear, error: taxYearError, saveTaxYear } = useTaxYear(profileId)
+  const { taxYear, error: taxYearError, saveTaxYear } = useTaxYear(profileId, year)
   const { events, loading: eventsLoading, error: eventsError, saveEvents } = useFutureEvents(profileId)
 
   // Gate the sections on the FIRST load only, never on a refetch. Saves now store
@@ -50,7 +52,12 @@ export function AccountScreen() {
         <div className="space-y-5">
           <ProfileSection profile={profile} onSave={saveProfile} />
 
-          {taxYear && <PayslipSection taxYear={taxYear} onSave={saveTaxYear} />}
+          {taxYear && (
+            <div>
+              <p className="font-mono text-xs text-text-2 mb-2">Editing {getTaxYearLabel(year)}</p>
+              <PayslipSection taxYear={taxYear} onSave={saveTaxYear} />
+            </div>
+          )}
           {!taxYear && taxYearError && (
             <div className="bg-surface border border-white/[0.06] rounded-[10px] p-5 text-red text-sm">
               Couldn't load your payslip figures — check your connection and data-repo settings.

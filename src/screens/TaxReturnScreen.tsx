@@ -4,17 +4,19 @@ import { ReturnSection } from '../components/taxreturn/ReturnSection'
 import { ExportDialog } from '../components/taxreturn/ExportDialog'
 import { AlertStrip } from '../components/ui/AlertStrip'
 import { useTaxYear } from '../hooks/useTaxYear'
+import { useSelectedTaxYear } from '../hooks/useSelectedTaxYear'
+import { TaxYearSelector } from '../components/ui/TaxYearSelector'
 import { storage } from '../lib/storage'
 import { getDataClient } from '../lib/github'
 import { readShareLots } from '../lib/dataRepo'
 import { buildTaxReturn } from '../lib/taxReturn'
 import { CURRENT_RATES as R } from '../lib/taxRates'
-import { getTaxYearLabel } from '../lib/taxYears'
 import type { ShareLot } from '../types'
 
 export function TaxReturnScreen() {
   const profileId = storage.getActiveProfile()
-  const { taxYear, loading } = useTaxYear(profileId)
+  const { year } = useSelectedTaxYear()
+  const { taxYear, loading } = useTaxYear(profileId, year)
   const [lots, setLots] = useState<ShareLot[]>([])
   const [showExport, setShowExport] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -46,7 +48,7 @@ export function TaxReturnScreen() {
     <div>
       <div className="flex items-baseline gap-4 mb-6 pb-5 border-b border-white/[0.06]">
         <h1 className="font-serif text-[28px] tracking-[-0.03em]">Your Self Assessment</h1>
-        <span className="font-mono text-xs text-text-2">{getTaxYearLabel(model.taxYear as `${number}-${number}`)}</span>
+        <TaxYearSelector />
         <span className="ml-auto font-mono text-xs text-accent bg-accent-soft border border-accent/30 rounded-full px-3 py-1">
           {model.readyCount} of {model.totalSections} sections ready
         </span>

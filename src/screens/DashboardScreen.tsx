@@ -7,17 +7,20 @@ import { PeriodToggle, type Period } from '../components/ui/PeriodToggle'
 import { useTaxYear } from '../hooks/useTaxYear'
 import { useProfile } from '../hooks/useProfile'
 import { useFutureEvents } from '../hooks/useFutureEvents'
+import { useSelectedTaxYear } from '../hooks/useSelectedTaxYear'
+import { TaxYearSelector } from '../components/ui/TaxYearSelector'
 import { storage } from '../lib/storage'
 import { summariseTaxYear } from '../lib/incomeSummary'
 import { dividendTaxStacked, savingsTaxStacked, marginalBand, parseTaxCode, effectivePersonalAllowance } from '../lib/taxCalc'
 import { projectTaxYear } from '../lib/projection'
 import { CURRENT_RATES as R } from '../lib/taxRates'
-import { getCurrentTaxYear, getTaxYearLabel, monthsIntoTaxYear } from '../lib/taxYears'
+import { monthsIntoTaxYear } from '../lib/taxYears'
 import { FirstPayslipPrompt } from '../components/ui/FirstPayslipPrompt'
 
 export function DashboardScreen() {
   const profileId = storage.getActiveProfile()
-  const { taxYear, loading } = useTaxYear(profileId)
+  const { year } = useSelectedTaxYear()
+  const { taxYear, loading } = useTaxYear(profileId, year)
   const { profile } = useProfile(profileId)
   const { events } = useFutureEvents(profileId)
   const [period, setPeriod] = useState<Period>('ytd')
@@ -47,7 +50,6 @@ export function DashboardScreen() {
   const divTax = dividendTaxStacked(s.dividendIncome, s.employmentIncome + s.savingsIncome, allowance, R)
   const extraOwed = divTax + savTax
 
-  const key = getCurrentTaxYear()
   const monthsIn = monthsIntoTaxYear(new Date())
   const needsSA = s.dividendIncome > R.dividendAllowance || s.savingsIncome > R.psaHigherRate || (profile?.otherIncomeSources.includes('cgt') ?? false)
 
@@ -57,7 +59,7 @@ export function DashboardScreen() {
     <div>
       <div className="flex items-baseline gap-4 mb-4 pb-5 border-b border-white/[0.06]">
         <h1 className="font-serif text-[28px] tracking-[-0.03em]">Your Tax Position</h1>
-        <span className="font-mono text-xs text-text-2 tracking-wide">{getTaxYearLabel(key)}</span>
+        <TaxYearSelector />
         <span className="ml-auto font-mono text-xs text-accent bg-accent-soft border border-accent/30 rounded-full px-3 py-1">{monthsIn} {monthsIn === 1 ? 'month' : 'months'} in</span>
       </div>
 

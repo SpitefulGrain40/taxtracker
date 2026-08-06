@@ -5,9 +5,11 @@ import { ExtractReview } from '../components/documents/ExtractReview'
 import { DocumentList, type DocItem } from '../components/documents/DocumentList'
 import { AlertStrip } from '../components/ui/AlertStrip'
 import { useTaxYear } from '../hooks/useTaxYear'
+import { useSelectedTaxYear } from '../hooks/useSelectedTaxYear'
+import { TaxYearSelector } from '../components/ui/TaxYearSelector'
 import { storage } from '../lib/storage'
 import { extractPayslip, extractP11D, extractP60 } from '../lib/claude'
-import { getCurrentTaxYear, getTaxYearKey, getTaxPeriod } from '../lib/taxYears'
+import { getTaxYearKey, getTaxPeriod } from '../lib/taxYears'
 import type { TaxYear, Payslip, BenefitEntry } from '../types'
 
 type DocType = 'payslip' | 'p11d' | 'p60'
@@ -34,7 +36,8 @@ function withPayslip(ty: TaxYear, payslip: Payslip): TaxYear {
 
 export function DocumentsScreen() {
   const profileId = storage.getActiveProfile()
-  const { taxYear, saveTaxYear, loading } = useTaxYear(profileId)
+  const { year } = useSelectedTaxYear()
+  const { taxYear, saveTaxYear, loading } = useTaxYear(profileId, year)
 
   const [docType, setDocType] = useState<DocType>('payslip')
   const [state, setState] = useState<State>('idle')
@@ -135,7 +138,7 @@ export function DocumentsScreen() {
     <div>
       <div className="flex items-baseline gap-4 mb-6 pb-5 border-b border-white/[0.06]">
         <h1 className="font-serif text-[28px] tracking-[-0.03em]">Documents</h1>
-        <span className="font-mono text-xs text-text-2">{getCurrentTaxYear()}</span>
+        <TaxYearSelector />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
