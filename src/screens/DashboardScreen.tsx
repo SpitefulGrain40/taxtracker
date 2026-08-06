@@ -14,7 +14,7 @@ import { summariseTaxYear } from '../lib/incomeSummary'
 import { dividendTaxStacked, savingsTaxStacked, marginalBand, parseTaxCode, effectivePersonalAllowance } from '../lib/taxCalc'
 import { projectTaxYear } from '../lib/projection'
 import { CURRENT_RATES as R } from '../lib/taxRates'
-import { monthsIntoTaxYear } from '../lib/taxYears'
+import { monthsIntoTaxYear, getCurrentTaxYear } from '../lib/taxYears'
 import { FirstPayslipPrompt } from '../components/ui/FirstPayslipPrompt'
 
 export function DashboardScreen() {
@@ -50,6 +50,9 @@ export function DashboardScreen() {
   const divTax = dividendTaxStacked(s.dividendIncome, s.employmentIncome + s.savingsIncome, allowance, R)
   const extraOwed = divTax + savTax
 
+  // The "months in" pill only means something for the year in progress; a past
+  // year is complete, so say so rather than showing today's position against it.
+  const isCurrentYear = year === getCurrentTaxYear()
   const monthsIn = monthsIntoTaxYear(new Date())
   const needsSA = s.dividendIncome > R.dividendAllowance || s.savingsIncome > R.psaHigherRate || (profile?.otherIncomeSources.includes('cgt') ?? false)
 
@@ -60,7 +63,9 @@ export function DashboardScreen() {
       <div className="flex items-baseline gap-4 mb-4 pb-5 border-b border-white/[0.06]">
         <h1 className="font-serif text-[28px] tracking-[-0.03em]">Your Tax Position</h1>
         <TaxYearSelector />
-        <span className="ml-auto font-mono text-xs text-accent bg-accent-soft border border-accent/30 rounded-full px-3 py-1">{monthsIn} {monthsIn === 1 ? 'month' : 'months'} in</span>
+        <span className="ml-auto font-mono text-xs text-accent bg-accent-soft border border-accent/30 rounded-full px-3 py-1">
+          {isCurrentYear ? `${monthsIn} ${monthsIn === 1 ? 'month' : 'months'} in` : 'complete year'}
+        </span>
       </div>
 
       <div className="flex items-center justify-between mb-6">

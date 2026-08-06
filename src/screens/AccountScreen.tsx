@@ -8,7 +8,7 @@ import { useTaxYear } from '../hooks/useTaxYear'
 import { useFutureEvents } from '../hooks/useFutureEvents'
 import { useSelectedTaxYear } from '../hooks/useSelectedTaxYear'
 import { storage } from '../lib/storage'
-import { getCurrentTaxYear, getTaxYearLabel } from '../lib/taxYears'
+import { getTaxYearLabel } from '../lib/taxYears'
 
 export function AccountScreen() {
   const profileId = storage.getActiveProfile()
@@ -65,7 +65,7 @@ export function AccountScreen() {
           )}
 
           {eventsEverLoaded.current && (
-            <FutureEventsSection events={events} taxYearKey={getCurrentTaxYear()} onSave={saveEvents} />
+            <FutureEventsSection events={events} taxYearKey={year} onSave={saveEvents} />
           )}
           {!eventsEverLoaded.current && eventsError && (
             <div className="bg-surface border border-white/[0.06] rounded-[10px] p-5 text-red text-sm">
